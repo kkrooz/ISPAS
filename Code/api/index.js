@@ -249,7 +249,11 @@ app.get('/api/dashboard/summary', (req, res) => {
 
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
-app.listen(PORT, () => {
-  console.log(`Server ISPAS 2.0 PRO berjalan di: http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server ISPAS 2.0 PRO berjalan di: http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
 
