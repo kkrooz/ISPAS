@@ -190,16 +190,30 @@
   async function handleLogin() {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-    const data = await res.json();
-    if (data.success) {
-      token = data.token;
-      currentUser = data.user;
-      localStorage.setItem('ispas_token', token);
-      localStorage.setItem('ispas_user', JSON.stringify(currentUser));
-      initApp();
-    } else {
-      document.getElementById('login-error').innerText = data.error;
+    const errorDiv = document.getElementById('login-error');
+    errorDiv.innerText = '';
+
+    try {
+      const res = await fetch('/api/login', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ username, password }) 
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        token = data.token;
+        currentUser = data.user;
+        localStorage.setItem('ispas_token', token);
+        localStorage.setItem('ispas_user', JSON.stringify(currentUser));
+        initApp();
+      } else {
+        errorDiv.innerText = data.error || 'Terjadi kesalahan saat login.';
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      errorDiv.innerText = 'Gagal terhubung ke server. Silakan coba lagi.';
     }
   }
 
