@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -20,8 +20,9 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ─── Database ────────────────────────────────────────────────────────────────
+// Menggunakan require literal agar Vercel dapat mem-bundle file JSON ini secara otomatis
 const db = {
-  customers: require(path.join(__dirname, '../server/data/customers.json')),
+  customers: require('../server/data/customers.json'),
   users: [
     // Default CS Admin for testing
     { 
@@ -34,7 +35,7 @@ const db = {
     }
   ],
   documents: [],
-  branches: require(path.join(__dirname, '../server/data/branches.json')),
+  branches: require('../server/data/branches.json'),
   orders: [], 
   auditLogs: [],
 };
