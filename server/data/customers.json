@@ -1,0 +1,54 @@
+[
+  {
+    "id": "cust-001",
+    "name": "PT Pharma Sehat Indonesia",
+    "segment": "Farmasi",
+    "deliveryType": "PHYSICAL_REQUIRED",
+    "slaDays": 30,
+    "minPages": 3,
+    "requiresStamp": true,
+    "requiresSignature": true,
+    "requiredFields": [
+      { "key": "noBatch", "label": "Nomor Batch", "weight": 2, "format": "^BTH-\\d{4}-\\d{3}$", "formatLabel": "BTH-YYYY-NNN" },
+      { "key": "expDate", "label": "Tanggal Kadaluarsa", "weight": 2, "format": "^\\d{2}/\\d{2}/\\d{4}$", "formatLabel": "DD/MM/YYYY" },
+      { "key": "noPO", "label": "Nomor PO", "weight": 1.5, "format": "^PO-\\d{5}$", "formatLabel": "PO-NNNNN" },
+      { "key": "jumlahBarang", "label": "Jumlah Barang", "weight": 1, "format": "^\\d+$", "formatLabel": "Angka" }
+    ],
+    "contact": "procurement@pharmasebat.co.id",
+    "notes": "Wajib dokumen fisik untuk audit BPOM. Scan digital untuk billing awal diperbolehkan."
+  },
+  {
+    "id": "cust-002",
+    "name": "PT FMCG Nusantara (Unilever Group)",
+    "segment": "FMCG",
+    "deliveryType": "DIGITAL",
+    "slaDays": 60,
+    "minPages": 1,
+    "requiresStamp": true,
+    "requiresSignature": false,
+    "requiredFields": [
+      { "key": "noPO", "label": "Nomor PO", "weight": 2, "format": "^PO-\\d{5}$", "formatLabel": "PO-NNNNN" },
+      { "key": "jumlahBarang", "label": "Jumlah Barang (Karton)", "weight": 2, "format": "^\\d+$", "formatLabel": "Angka" },
+      { "key": "namaBarang", "label": "Nama Barang", "weight": 1, "format": null, "formatLabel": "Teks bebas" }
+    ],
+    "contact": "logistics@fmcgnusantara.co.id",
+    "notes": "Full digital. e-POD diterima via MySPIL. Tanda tangan digital diakui."
+  },
+  {
+    "id": "cust-003",
+    "name": "PT Pabrik Mesin Tradisional",
+    "segment": "Manufaktur",
+    "deliveryType": "PHYSICAL_REQUIRED",
+    "slaDays": 90,
+    "minPages": 2,
+    "requiresStamp": true,
+    "requiresSignature": true,
+    "requiredFields": [
+      { "key": "noPO", "label": "Nomor PO", "weight": 2, "format": "^PO-\\d{5}$", "formatLabel": "PO-NNNNN" },
+      { "key": "jumlahBarang", "label": "Jumlah Barang", "weight": 1.5, "format": "^\\d+$", "formatLabel": "Angka" },
+      { "key": "tipeMesin", "label": "Tipe/Model Mesin", "weight": 1, "format": null, "formatLabel": "Teks bebas" }
+    ],
+    "contact": "ops@pabrikmesin.co.id",
+    "notes": "Verifikasi manual oleh tim gudang. Fisik wajib dikirim ke kantor pusat setelah pengiriman."
+  }
+]
