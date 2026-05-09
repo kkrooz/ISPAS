@@ -54,16 +54,43 @@ const db = {
   auditLogs: [],
 };
 
-// Ensure at least one admin exists
+// Ensure at least one admin and fixed roles exist
 if (db.users.length === 0) {
-  db.users.push({ 
-    id: 'admin-001', 
-    username: 'cs_admin', 
-    password: bcrypt.hashSync('admin123', 10), 
-    email: 'ispas.admin@gmail.com', 
-    role: 'CS_SPIL',
-    customerId: null 
-  });
+  const fixedUsers = [
+    { 
+      id: 'admin-001', 
+      username: 'cs_admin', 
+      password: bcrypt.hashSync('admin123', 10), 
+      email: 'ispas.admin@gmail.com', 
+      role: 'CS_SPIL',
+      customerId: null 
+    },
+    { 
+      id: 'isdr-001', 
+      username: 'isdr_user', 
+      password: bcrypt.hashSync('isdr123', 10), 
+      email: 'isdr.branch@gmail.com', 
+      role: 'ISDR',
+      customerId: null 
+    },
+    { 
+      id: 'isdo-001', 
+      username: 'isdo_user', 
+      password: bcrypt.hashSync('isdo123', 10), 
+      email: 'isdo.ops@gmail.com', 
+      role: 'ISDO',
+      customerId: null 
+    },
+    { 
+      id: 'vendor-001', 
+      username: 'vendor_user', 
+      password: bcrypt.hashSync('vendor123', 10), 
+      email: 'vendor.trucking@gmail.com', 
+      role: 'VENDOR',
+      customerId: 'cust-003' // Contoh: Terhubung ke salah satu data customer/vendor
+    }
+  ];
+  db.users.push(...fixedUsers);
   saveJSON('../server/data/users.json', db.users);
 }
 
