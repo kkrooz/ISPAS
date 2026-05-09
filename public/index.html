@@ -125,6 +125,9 @@
               <label>Role User <span>*</span></label>
               <select id="user-role" onchange="toggleCustomerSelect()">
                 <option value="CUSTOMER">Customer (Eksternal)</option>
+                <option value="VENDOR">Vendor (Vendor Trucking)</option>
+                <option value="ISDR">ISDR (Cabang)</option>
+                <option value="ISDO">ISDO (Operasional)</option>
                 <option value="CS_SPIL">CS SPIL (Admin)</option>
               </select>
             </div>
@@ -323,7 +326,8 @@
 
   function toggleCustomerSelect() {
     const role = document.getElementById('user-role').value;
-    document.getElementById('cust-select-group').style.display = role === 'CUSTOMER' ? 'block' : 'none';
+    // Tampilkan pilihan perusahaan jika role adalah CUSTOMER atau VENDOR
+    document.getElementById('cust-select-group').style.display = (role === 'CUSTOMER' || role === 'VENDOR') ? 'block' : 'none';
   }
 
   async function createUserAccount() {

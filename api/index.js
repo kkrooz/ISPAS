@@ -150,8 +150,10 @@ app.post('/api/users', authenticate, async (req, res) => {
   }
 
   const assignedRole = role || 'CUSTOMER';
-  if (assignedRole === 'CUSTOMER' && !customerId) {
-    return res.status(400).json({ error: 'Customer ID WAJIB diisi untuk role CUSTOMER.' });
+  const needsCustomer = (assignedRole === 'CUSTOMER' || assignedRole === 'VENDOR');
+  
+  if (needsCustomer && !customerId) {
+    return res.status(400).json({ error: `Customer/Perusahaan WAJIB diisi untuk role ${assignedRole}.` });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -162,7 +164,7 @@ app.post('/api/users', authenticate, async (req, res) => {
     email, 
     phone, 
     role: assignedRole, 
-    customerId: assignedRole === 'CUSTOMER' ? customerId : null, 
+    customerId: needsCustomer ? customerId : null, 
     createdAt: new Date().toISOString() 
   };
   
