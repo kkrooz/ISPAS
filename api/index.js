@@ -32,24 +32,40 @@ function loadJSON(relPath) {
   }
 }
 
+// Helper to save JSON safely
+function saveJSON(relPath, data) {
+  try {
+    const fullPath = path.join(__dirname, relPath);
+    fs.writeFileSync(fullPath, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error(`Failed to save JSON: ${relPath}`, e.message);
+    return false;
+  }
+}
+
 // ─── Database ────────────────────────────────────────────────────────────────
 const db = {
   customers: loadJSON('../server/data/customers.json'),
-  users: [
-    { 
-      id: 'admin-001', 
-      username: 'cs_admin', 
-      password: bcrypt.hashSync('admin123', 10), 
-      email: 'ispas.admin@gmail.com', 
-      role: 'CS_SPIL',
-      customerId: null 
-    }
-  ],
+  users: loadJSON('../server/data/users.json'),
   documents: [],
   branches: loadJSON('../server/data/branches.json'),
   orders: [], 
   auditLogs: [],
 };
+
+// Ensure at least one admin exists
+if (db.users.length === 0) {
+  db.users.push({ 
+    id: 'admin-001', 
+    username: 'cs_admin', 
+    password: bcrypt.hashSync('admin123', 10), 
+    email: 'ispas.admin@gmail.com', 
+    role: 'CS_SPIL',
+    customerId: null 
+  });
+  saveJSON('../server/data/users.json', db.users);
+}
 
 // ─── MIDDLEWARE ──────────────────────────────────────────────────────────────
 function authenticate(req, res, next) {
@@ -126,16 +142,48 @@ app.post('/api/config/email', authenticate, (req, res) => {
 // Create User
 app.post('/api/users', authenticate, async (req, res) => {
   if (req.user.role !== 'CS_SPIL') return res.status(403).json({ error: 'Hanya CS yang dapat akses.' });
-  const { username, password, email, phone, customerId } = req.body;
+  
+  const { username, password, email, phone, customerId, role } = req.body;
+  
+  if (!username || !password || !email || !phone) {
+    return res.status(400).json({ error: 'Username, Password, Email, dan Phone WAJIB diisi.' });
+  }
+
+  const assignedRole = role || 'CUSTOMER';
+  if (assignedRole === 'CUSTOMER' && !customerId) {
+    return res.status(400).json({ error: 'Customer ID WAJIB diisi untuk role CUSTOMER.' });
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = { id: uuidv4(), username, password: hashedPassword, email, phone, role: 'CUSTOMER', customerId, createdAt: new Date().toISOString() };
+  const newUser = { 
+    id: uuidv4(), 
+    username, 
+    password: hashedPassword, 
+    email, 
+    phone, 
+    role: assignedRole, 
+    customerId: assignedRole === 'CUSTOMER' ? customerId : null, 
+    createdAt: new Date().toISOString() 
+  };
+  
   db.users.push(newUser);
-  sendRealEmail(email, 'Aktivasi ISPAS', `Halo ${username}, akun aktif.`);
+  saveJSON('../server/data/users.json', db.users);
+
+  sendRealEmail(email, 'Aktivasi ISPAS', `Halo ${username}, akun Anda aktif dengan role ${assignedRole}.`);
   sendRealSMS(phone, `ISPAS: Akun ${username} aktif.`);
-  res.status(201).json({ success: true });
+  
+  res.status(201).json({ success: true, user: { username, role: assignedRole } });
 });
 
-app.get('/api/users', authenticate, (req, res) => res.json(db.users.map(u => ({ username: u.username, email: u.email, customerId: u.customerId }))));
+app.get('/api/users', authenticate, (req, res) => {
+  res.json(db.users.map(u => ({ 
+    username: u.username, 
+    email: u.email, 
+    role: u.role, 
+    customerId: u.customerId,
+    createdAt: u.createdAt
+  })));
+});
 
 // Create Order
 app.post('/api/orders', authenticate, (req, res) => {
