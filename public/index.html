@@ -200,20 +200,33 @@
         body: JSON.stringify({ username, password }) 
       });
       
-      const data = await res.json();
-      
-      if (data.success) {
-        token = data.token;
-        currentUser = data.user;
-        localStorage.setItem('ispas_token', token);
-        localStorage.setItem('ispas_user', JSON.stringify(currentUser));
-        initApp();
+      const contentType = res.headers.get("content-type");
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Server error response:', text);
+        errorDiv.innerText = `Error ${res.status}: ${text.substring(0, 50)}...`;
+        return;
+      }
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        if (data.success) {
+          token = data.token;
+          currentUser = data.user;
+          localStorage.setItem('ispas_token', token);
+          localStorage.setItem('ispas_user', JSON.stringify(currentUser));
+          initApp();
+        } else {
+          errorDiv.innerText = data.error || 'Username atau Password salah.';
+        }
       } else {
-        errorDiv.innerText = data.error || 'Terjadi kesalahan saat login.';
+        const text = await res.text();
+        console.error('Non-JSON response:', text);
+        errorDiv.innerText = 'Server tidak memberikan respon JSON. (Check Console)';
       }
     } catch (err) {
-      console.error('Login error:', err);
-      errorDiv.innerText = 'Gagal terhubung ke server. Silakan coba lagi.';
+      console.error('Network/Fetch error:', err);
+      errorDiv.innerText = 'Gagal terhubung ke server. (Check Console)';
     }
   }
 
