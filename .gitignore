@@ -1,0 +1,8 @@
+Pass GitHub.txt
+Code/.git/
+Code/node_modules/
+Code/.env
+Code/.vercel
+Code/package-lock.json
+**/node_modules/
+**/.env

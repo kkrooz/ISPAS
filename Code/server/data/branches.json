@@ -1,0 +1,54 @@
+[
+  {
+    "id": "branch-001",
+    "name": "Cabang Surabaya",
+    "city": "Surabaya",
+    "region": "Jawa Timur",
+    "metrics": {
+      "accuracyRate": 92,
+      "avgCycleTimeDays": 1.2,
+      "slaComplianceRate": 96,
+      "totalVerified": 248,
+      "approved": 228
+    }
+  },
+  {
+    "id": "branch-002",
+    "name": "Cabang Jakarta",
+    "city": "Jakarta",
+    "region": "DKI Jakarta",
+    "metrics": {
+      "accuracyRate": 78,
+      "avgCycleTimeDays": 2.5,
+      "slaComplianceRate": 81,
+      "totalVerified": 312,
+      "approved": 243
+    }
+  },
+  {
+    "id": "branch-003",
+    "name": "Cabang Makassar",
+    "city": "Makassar",
+    "region": "Sulawesi Selatan",
+    "metrics": {
+      "accuracyRate": 65,
+      "avgCycleTimeDays": 3.8,
+      "slaComplianceRate": 70,
+      "totalVerified": 145,
+      "approved": 94
+    }
+  },
+  {
+    "id": "branch-004",
+    "name": "Cabang Medan",
+    "city": "Medan",
+    "region": "Sumatera Utara",
+    "metrics": {
+      "accuracyRate": 88,
+      "avgCycleTimeDays": 1.8,
+      "slaComplianceRate": 90,
+      "totalVerified": 189,
+      "approved": 166
+    }
+  }
+]
