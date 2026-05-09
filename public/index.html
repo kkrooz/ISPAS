@@ -3,1533 +3,350 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ISPAS — PT SPIL Verification System</title>
+  <title>ISPAS 2.0 PRO — Integrated Smart Verification</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ─── CSS Variables ───────────────────────────────────── */
     :root {
-      --bg: #0b0f1a;
-      --bg2: #111827;
-      --bg3: #1a2236;
-      --border: rgba(99,173,255,0.12);
-      --border-bright: rgba(99,173,255,0.35);
-      --text: #e8edf7;
-      --text-dim: #8899bb;
-      --text-muted: #4a5a7a;
-      --accent: #3b82f6;
-      --accent2: #60a5fa;
-      --green: #10b981;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-      --orange: #f97316;
-      --purple: #8b5cf6;
-      --mono: 'Space Mono', monospace;
-      --sans: 'DM Sans', sans-serif;
-      --radius: 10px;
-      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --bg: #0b0f1a; --bg2: #111827; --bg3: #1a2236;
+      --border: rgba(99,173,255,0.12); --border-bright: rgba(99,173,255,0.35);
+      --text: #e8edf7; --text-dim: #8899bb; --text-muted: #4a5a7a;
+      --accent: #3b82f6; --accent2: #60a5fa; --green: #10b981;
+      --yellow: #f59e0b; --red: #ef4444; --orange: #f97316;
+      --mono: 'Space Mono', monospace; --sans: 'DM Sans', sans-serif;
+      --radius: 10px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
     }
-
-    /* ─── Reset & Base ───────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--sans);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    /* ─── Layout ─────────────────────────────────────────── */
-    .app { display: flex; min-height: 100vh; }
-
-    /* ─── Sidebar ────────────────────────────────────────── */
-    .sidebar {
-      width: 230px;
-      min-width: 230px;
-      background: var(--bg2);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 0;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      z-index: 100;
-    }
-    .sidebar-logo {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .sidebar-logo .brand {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--accent2);
-      letter-spacing: 0.08em;
-    }
-    .sidebar-logo .sub {
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 2px;
-      line-height: 1.3;
-    }
-    .sidebar-logo .spil-tag {
-      display: inline-block;
-      background: rgba(59,130,246,0.15);
-      color: var(--accent2);
-      font-family: var(--mono);
-      font-size: 9px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-top: 6px;
-      border: 1px solid rgba(59,130,246,0.3);
-    }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+    .app { display: none; min-height: 100vh; }
+    .app.active { display: flex; }
+    
+    /* Login Styles */
+    #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-card { background: var(--bg2); border: 1px solid var(--border); padding: 30px; border-radius: var(--radius); width: 100%; max-width: 400px; box-shadow: var(--shadow); }
+    
+    .sidebar { width: 230px; background: var(--bg2); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; display: flex; flex-direction: column; }
+    .sidebar-logo { padding: 20px; border-bottom: 1px solid var(--border); }
+    .brand { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent2); letter-spacing: 0.08em; }
     .nav { flex: 1; padding: 12px 0; overflow-y: auto; }
-    .nav-section {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--text-muted);
-      letter-spacing: 0.12em;
-      padding: 12px 20px 4px;
-      text-transform: uppercase;
-    }
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 20px;
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: all 0.15s;
-      font-size: 13px;
-      font-weight: 500;
-      border-left: 3px solid transparent;
-      user-select: none;
-    }
-    .nav-item:hover { background: rgba(59,130,246,0.07); color: var(--text); }
-    .nav-item.active {
-      background: rgba(59,130,246,0.12);
-      color: var(--accent2);
-      border-left-color: var(--accent);
-    }
-    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
-    .nav-badge {
-      margin-left: auto;
-      background: var(--red);
-      color: #fff;
-      font-size: 10px;
-      font-family: var(--mono);
-      padding: 1px 6px;
-      border-radius: 10px;
-      font-weight: 700;
-    }
-    .sidebar-footer {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: var(--mono);
-    }
-
-    /* ─── Main Content ───────────────────────────────────── */
-    .main {
-      margin-left: 230px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 28px;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-    .topbar-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .topbar-sub { font-size: 12px; color: var(--text-muted); }
-    .topbar-actions { display: flex; gap: 10px; align-items: center; }
-    .badge-live {
-      display: flex; align-items: center; gap: 5px;
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--green);
-      background: rgba(16,185,129,0.1);
-      border: 1px solid rgba(16,185,129,0.3);
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
-    .badge-live::before {
-      content: '';
-      width: 6px; height: 6px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--text-dim); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
+    .nav-item:hover, .nav-item.active { background: rgba(59,130,246,0.1); color: var(--text); border-left-color: var(--accent); }
+    .main { margin-left: 230px; flex: 1; display: flex; flex-direction: column; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
     .content { padding: 24px 28px; flex: 1; }
-
-    /* ─── Pages ──────────────────────────────────────────── */
     .page { display: none; }
-    .page.active { display: block; animation: fadeIn 0.2s ease; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
-
-    /* ─── KPI Cards ──────────────────────────────────────── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-    .kpi-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .kpi-card:hover { border-color: var(--border-bright); }
-    .kpi-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-    }
-    .kpi-card.blue::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-    .kpi-card.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
-    .kpi-card.yellow::before { background: linear-gradient(90deg, var(--yellow), #fcd34d); }
-    .kpi-card.red::before { background: linear-gradient(90deg, var(--red), #f87171); }
-    .kpi-card.purple::before { background: linear-gradient(90deg, var(--purple), #a78bfa); }
-    .kpi-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-family: var(--mono);
-      margin-bottom: 8px;
-    }
-    .kpi-value {
-      font-family: var(--mono);
-      font-size: 26px;
-      font-weight: 700;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .kpi-sub { font-size: 11px; color: var(--text-dim); }
-
-    /* ─── Section Headers ────────────────────────────────── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .section-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .section-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-
-    /* ─── Buttons ─────────────────────────────────────────── */
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px;
-      border-radius: 7px;
-      font-family: var(--sans);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.15s;
-    }
+    .page.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;} }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; padding: 20px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 7px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 13px; text-decoration: none; justify-content: center; }
     .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-dim);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { background: var(--bg3); color: var(--text); }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-green:hover { background: #059669; }
-    .btn-red { background: transparent; color: var(--red); border: 1px solid var(--red); }
-    .btn-red:hover { background: rgba(239,68,68,0.1); }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
-
-    /* ─── Confidence Badge ───────────────────────────────── */
-    .conf-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 8px;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .conf-badge.HIGH { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
-    .conf-badge.MEDIUM { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
-    .conf-badge.LOW { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-
-    /* ─── SLA Badge ──────────────────────────────────────── */
-    .sla-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 8px;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 11px;
-    }
-    .sla-badge.ON_TRACK { background: rgba(16,185,129,0.1); color: var(--green); }
-    .sla-badge.ALERT { background: rgba(96,165,250,0.1); color: var(--accent2); }
-    .sla-badge.WARNING { background: rgba(245,158,11,0.15); color: var(--yellow); }
-    .sla-badge.CRITICAL { background: rgba(249,115,22,0.15); color: var(--orange); }
-    .sla-badge.BREACHED { background: rgba(239,68,68,0.15); color: var(--red); }
-
-    /* ─── Status Badge ───────────────────────────────────── */
-    .status-badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 5px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .status-badge.PENDING { background: rgba(96,165,250,0.1); color: var(--accent2); }
+    .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-family: var(--mono); }
+    label span { color: var(--red); }
+    input, select, textarea { background: var(--bg3); border: 1px solid var(--border); padding: 8px 12px; color: #fff; border-radius: 6px; width: 100%; }
+    input:focus { border-color: var(--accent); outline: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; padding: 10px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+    .status-badge { padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .status-badge.OPEN { background: rgba(59,130,246,0.1); color: var(--accent); }
     .status-badge.VERIFIED { background: rgba(16,185,129,0.1); color: var(--green); }
-    .status-badge.REJECTED { background: rgba(239,68,68,0.1); color: var(--red); }
-    .status-badge.REVISION { background: rgba(245,158,11,0.1); color: var(--yellow); }
-
-    /* ─── Table ──────────────────────────────────────────── */
-    .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    thead th {
-      text-align: left;
-      padding: 10px 14px;
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
-    }
-    tbody tr:hover { background: rgba(255,255,255,0.02); }
-    tbody td { padding: 11px 14px; color: var(--text); vertical-align: middle; }
-    tbody td.dim { color: var(--text-dim); }
-
-    /* ─── Card ───────────────────────────────────────────── */
-    .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 20px;
-    }
-    .card-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .card-body { padding: 20px; }
-
-    /* ─── Progress Bar ───────────────────────────────────── */
-    .progress-wrap { background: var(--bg3); border-radius: 4px; height: 6px; overflow: hidden; }
-    .progress-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
-
-    /* ─── Escalation Cards ───────────────────────────────── */
-    .esc-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 12px;
-      border-left: 4px solid;
-    }
-    .esc-card.level-1 { border-left-color: var(--accent2); }
-    .esc-card.level-2 { border-left-color: var(--yellow); }
-    .esc-card.level-3 { border-left-color: var(--orange); }
-    .esc-card.level-CRITICAL { border-left-color: var(--red); background: rgba(239,68,68,0.05); }
-    .esc-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-    .esc-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
-    .esc-action {
-      font-size: 12px;
-      color: var(--yellow);
-      display: flex; align-items: center; gap: 5px;
-    }
-    .esc-notify { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
-    /* ─── VQI Meter ──────────────────────────────────────── */
-    .vqi-ring {
-      width: 60px; height: 60px;
-      position: relative;
-      flex-shrink: 0;
-    }
-    .vqi-ring svg { transform: rotate(-90deg); }
-    .vqi-ring .vqi-num {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      font-family: var(--mono);
-      font-size: 14px;
-      font-weight: 700;
-    }
-    .branch-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .branch-info { flex: 1; }
-    .branch-name { font-weight: 700; font-size: 14px; }
-    .branch-region { font-size: 12px; color: var(--text-muted); }
-    .branch-metrics { display: flex; gap: 16px; margin-top: 8px; }
-    .branch-metric { font-size: 12px; }
-    .branch-metric-label { color: var(--text-muted); }
-    .branch-metric-value { font-family: var(--mono); font-weight: 700; font-size: 13px; }
-
-    /* ─── Form ───────────────────────────────────────────── */
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    .form-group.full { grid-column: 1 / -1; }
-    label {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-family: var(--mono);
-    }
-    input, select, textarea {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      color: var(--text);
-      padding: 9px 12px;
-      font-family: var(--sans);
-      font-size: 13px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    }
-    input::placeholder { color: var(--text-muted); }
-    select option { background: var(--bg2); }
-    .toggle-wrap { display: flex; align-items: center; gap: 10px; }
-    .toggle {
-      position: relative; width: 36px; height: 20px;
-    }
-    .toggle input { display: none; }
-    .toggle-slider {
-      position: absolute; inset: 0;
-      background: var(--bg3);
-      border-radius: 20px;
-      cursor: pointer;
-      transition: background 0.2s;
-      border: 1px solid var(--border);
-    }
-    .toggle-slider::after {
-      content: '';
-      position: absolute;
-      width: 14px; height: 14px;
-      background: var(--text-muted);
-      border-radius: 50%;
-      top: 2px; left: 2px;
-      transition: all 0.2s;
-    }
-    .toggle input:checked + .toggle-slider { background: var(--green); border-color: var(--green); }
-    .toggle input:checked + .toggle-slider::after { left: 18px; background: #fff; }
-    .toggle-label { font-size: 13px; }
-
-    /* ─── Checklist ──────────────────────────────────────── */
-    .checklist-item {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-bottom: 6px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-    }
-    .checklist-item.pass { border-left: 3px solid var(--green); }
-    .checklist-item.fail { border-left: 3px solid var(--red); }
-    .check-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
-    .check-field { font-weight: 600; font-size: 13px; }
-    .check-issue { font-size: 12px; color: var(--red); }
-    .check-ok { font-size: 12px; color: var(--green); }
-    .severity-tag {
-      margin-left: auto;
-      font-family: var(--mono);
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .severity-tag.HIGH { background: rgba(239,68,68,0.15); color: var(--red); }
-    .severity-tag.MEDIUM { background: rgba(245,158,11,0.15); color: var(--yellow); }
-
-    /* ─── Modal ──────────────────────────────────────────── */
-    .modal-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--bg2);
-      border: 1px solid var(--border-bright);
-      border-radius: 12px;
-      width: 90%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow);
-      animation: modalIn 0.2s ease;
-    }
-    @keyframes modalIn { from{opacity:0;transform:scale(0.96);} to{opacity:1;transform:none;} }
-    .modal-header {
-      padding: 18px 22px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .modal-title { font-size: 16px; font-weight: 700; }
-    .modal-close {
-      background: none; border: none; color: var(--text-muted);
-      font-size: 20px; cursor: pointer; line-height: 1;
-    }
-    .modal-body { padding: 22px; }
-    .modal-footer {
-      padding: 16px 22px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-
-    /* ─── Toast ──────────────────────────────────────────── */
-    #toast-container {
-      position: fixed;
-      bottom: 24px; right: 24px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .toast {
-      background: var(--bg2);
-      border: 1px solid var(--border-bright);
-      border-radius: 8px;
-      padding: 12px 16px;
-      min-width: 260px;
-      box-shadow: var(--shadow);
-      font-size: 13px;
-      animation: toastIn 0.3s ease;
-      display: flex; align-items: center; gap: 10px;
-    }
-    @keyframes toastIn { from{opacity:0;transform:translateX(20px);} to{opacity:1;transform:none;} }
-    .toast.success { border-left: 3px solid var(--green); }
-    .toast.error { border-left: 3px solid var(--red); }
-    .toast.warning { border-left: 3px solid var(--yellow); }
-    .toast.info { border-left: 3px solid var(--accent); }
-
-    /* ─── Empty State ────────────────────────────────────── */
-    .empty-state {
-      text-align: center;
-      padding: 48px 24px;
-      color: var(--text-muted);
-    }
-    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
-    .empty-state p { font-size: 14px; }
-
-    /* ─── Tabs ───────────────────────────────────────────── */
-    .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
-    .tab {
-      padding: 8px 16px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-dim);
-      border: 1px solid transparent;
-      transition: all 0.15s;
-    }
-    .tab.active {
-      background: rgba(59,130,246,0.12);
-      color: var(--accent2);
-      border-color: rgba(59,130,246,0.3);
-    }
-    .tab:hover:not(.active) { background: var(--bg3); color: var(--text); }
-
-    /* ─── Two-Column Grid ────────────────────────────────── */
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-    @media (max-width: 1100px) { .two-col, .three-col { grid-template-columns: 1fr; } }
-
-    /* ─── Loader ─────────────────────────────────────────── */
-    .loader {
-      display: flex; align-items: center; justify-content: center;
-      padding: 40px;
-      color: var(--text-muted);
-    }
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 10px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ─── Util ───────────────────────────────────────────── */
-    .gap-10 { display: flex; gap: 10px; align-items: center; }
-    .mt-16 { margin-top: 16px; }
-    .text-dim { color: var(--text-dim); }
-    .text-muted { color: var(--text-muted); }
-    .text-green { color: var(--green); }
-    .text-red { color: var(--red); }
-    .text-yellow { color: var(--yellow); }
-    .mono { font-family: var(--mono); }
-    .rule-item {
-      padding: 8px 12px;
-      background: var(--bg);
-      border-radius: 6px;
-      border-left: 3px solid var(--accent);
-      margin-bottom: 6px;
-      font-size: 12px;
-    }
-    .rule-item strong { color: var(--accent2); }
   </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- ─── Sidebar ─────────────────────────────────────── -->
+<!-- LOGIN PAGE -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="brand" style="margin-bottom: 20px; font-size: 20px; text-align: center;">ISPAS 2.0</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="cs_admin">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="admin123">
+    </div>
+    <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="handleLogin()">Login</button>
+    <div id="login-error" style="color: var(--red); font-size: 12px; margin-top: 10px; text-align: center;"></div>
+  </div>
+</div>
+
+<div class="app" id="app-container">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="brand">ISPAS</div>
-      <div class="sub">Integrated Smart Verification<br>& Prescriptive Analytics</div>
-      <div class="spil-tag">PT SPIL v1.0</div>
+      <div class="brand">ISPAS 2.0 PRO</div>
+      <div style="font-size:10px; color:var(--text-muted)" id="user-info">Not logged in</div>
     </div>
-    <nav class="nav">
-      <div class="nav-section">Utama</div>
-      <div class="nav-item active" onclick="navigate('dashboard')">
-        <span class="icon">📊</span> Dashboard
-      </div>
-      <div class="nav-item" onclick="navigate('submit')">
-        <span class="icon">📤</span> Submit Dokumen
-      </div>
-      <div class="nav-item" onclick="navigate('verification')">
-        <span class="icon">✅</span> Verifikasi Cabang
-        <span class="nav-badge" id="nav-pending">—</span>
-      </div>
-
-      <div class="nav-section">Manajemen</div>
-      <div class="nav-item" onclick="navigate('escalation')">
-        <span class="icon">🚨</span> Eskalasi SLA
-        <span class="nav-badge" id="nav-esc">—</span>
-      </div>
-      <div class="nav-item" onclick="navigate('branches')">
-        <span class="icon">🏢</span> Cabang & VQI
-      </div>
-      <div class="nav-item" onclick="navigate('customers')">
-        <span class="icon">🏭</span> Profil Pelanggan
-      </div>
-
-      <div class="nav-section">Sistem</div>
-      <div class="nav-item" onclick="navigate('audit')">
-        <span class="icon">📋</span> Audit Log
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      ISPAS Engine v1.0<br>
-      <span id="clock">—</span>
+    <nav class="nav" id="sidebar-nav"></nav>
+    <div style="padding: 20px; border-top: 1px solid var(--border);">
+      <button class="btn btn-ghost" style="width: 100%;" onclick="handleLogout()">Keluar</button>
     </div>
   </aside>
 
-  <!-- ─── Main ─────────────────────────────────────────── -->
   <main class="main">
     <header class="topbar">
       <div>
-        <div class="topbar-title" id="page-title">Dashboard</div>
-        <div class="topbar-sub" id="page-sub">Ringkasan operasional verifikasi dokumen</div>
+        <div id="page-title" style="font-weight:700; font-size:16px;">Dashboard</div>
+        <div id="page-sub" style="font-size:12px; color:var(--text-muted)">Memuat...</div>
       </div>
-      <div class="topbar-actions">
-        <div class="badge-live">LIVE</div>
-        <button class="btn btn-ghost btn-sm" onclick="refreshAll()">🔄 Refresh</button>
+      <div style="display:flex; gap:15px; align-items:center;">
+        <div style="font-size:12px; font-family:var(--mono); color:var(--green)">● LIVE SESSION</div>
       </div>
     </header>
 
     <div class="content">
-
-      <!-- ══ PAGE: DASHBOARD ═══════════════════════════════ -->
+      <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
-        <div class="kpi-grid" id="kpi-grid">
-          <div class="loader"><div class="spinner"></div> Memuat data...</div>
+        <div class="card" style="border-left: 4px solid var(--accent);">
+          <h3 id="welcome-msg">Dashboard Utama</h3>
+          <p class="text-dim">Pemantauan logistik dengan notifikasi riil (Email & WhatsApp).</p>
         </div>
-        <div class="two-col">
-          <div>
-            <div class="section-header">
-              <div>
-                <div class="section-title">Confidence Distribution</div>
-                <div class="section-sub">Distribusi level kepercayaan dokumen aktif</div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-body" id="conf-dist">
-                <div class="loader"><div class="spinner"></div></div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="section-header">
-              <div>
-                <div class="section-title">Eskalasi Aktif</div>
-                <div class="section-sub">Dokumen yang memerlukan tindakan segera</div>
-              </div>
-            </div>
-            <div id="esc-summary">
-              <div class="loader"><div class="spinner"></div></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="section-header">
-            <div>
-              <div class="section-title">Dokumen Terbaru</div>
-              <div class="section-sub">10 dokumen terakhir disubmit</div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID Dokumen</th>
-                    <th>Pelanggan</th>
-                    <th>Cabang</th>
-                    <th>Confidence</th>
-                    <th>SLA</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="recent-docs-body">
-                  <tr><td colspan="7"><div class="loader"><div class="spinner"></div></div></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div id="dashboard-stats" class="form-grid"></div>
+        <div class="card" style="margin-top:20px">
+          <h4>📋 Log Notifikasi Terkirim</h4>
+          <div id="audit-list" style="max-height: 200px; overflow-y: auto; font-size:12px; margin-top:10px"></div>
         </div>
       </div>
 
-      <!-- ══ PAGE: SUBMIT ══════════════════════════════════ -->
+      <!-- ══ PAGE: CS USER MANAGEMENT ══ -->
+      <div class="page" id="page-cs-users">
+        <div class="card">
+          <h3 style="margin-bottom:15px">👤 Manajemen Akun Customer</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Username <span>*</span></label><input type="text" id="user-name"></div>
+            <div class="form-group"><label>Password <span>*</span></label><input type="password" id="user-pass"></div>
+            <div class="form-group"><label>Email Customer <span>*</span></label><input type="email" id="user-email"></div>
+            <div class="form-group"><label>Nomor HP/WA <span>*</span></label><input type="text" id="user-phone" placeholder="08xxx"></div>
+            <div class="form-group"><label>Pilih Perusahaan <span>*</span></label><select id="user-cust-id"></select></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:15px" onclick="createUserAccount()">🚀 Buat Akun & Kirim Notifikasi</button>
+        </div>
+        <div class="card">
+          <h4>Daftar Akun Aktif</h4>
+          <table id="user-table"><thead><tr><th>Username</th><th>Email</th><th>Customer</th></tr></thead><tbody id="user-list"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: CS ORDER ══ -->
+      <div class="page" id="page-cs-order">
+        <div class="card">
+          <h3 style="margin-bottom:15px">📝 Pembuatan Surat Jalan</h3>
+          <div class="form-grid">
+            <div class="form-group"><label>Nomor Order/BL <span>*</span></label><input type="text" id="cs-order-num"></div>
+            <div class="form-group"><label>Customer <span>*</span></label><select id="cs-cust-select"></select></div>
+            <div class="form-group"><label>Asal (Origin) <span>*</span></label><input type="text" id="cs-origin"></div>
+            <div class="form-group"><label>Tujuan (Destination) <span>*</span></label><input type="text" id="cs-dest"></div>
+            <div class="form-group"><label>Nama Driver <span>*</span></label><input type="text" id="cs-driver"></div>
+            <div class="form-group"><label>Plat Nomor Truk <span>*</span></label><input type="text" id="cs-plate"></div>
+            <div class="form-group"><label>Deskripsi Barang <span>*</span></label><input type="text" id="cs-goods"></div>
+            <div class="form-group"><label>Tanggal Pengiriman <span>*</span></label><input type="date" id="cs-date"></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:15px" onclick="submitOrder()">💾 Terbitkan Surat Jalan</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: SUBMIT ══ -->
       <div class="page" id="page-submit">
-        <div class="two-col">
-          <div>
-            <div class="card">
-              <div class="card-header">
-                <div>
-                  <div class="section-title">📤 Submit BA Balik</div>
-                  <div class="section-sub">VendorHUB — Upload dokumen pengiriman</div>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="form-grid">
-                  <div class="form-group full">
-                    <label>Pelanggan</label>
-                    <select id="f-customer" onchange="onCustomerChange()">
-                      <option value="">— Pilih Pelanggan —</option>
-                    </select>
-                  </div>
-                  <div class="form-group full">
-                    <label>Cabang Pengirim</label>
-                    <select id="f-branch">
-                      <option value="">— Pilih Cabang —</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Jumlah Halaman</label>
-                    <input type="number" id="f-pages" min="1" value="1" />
-                  </div>
-                  <div class="form-group">
-                    <label>Nomor Resi Fisik (opsional)</label>
-                    <input type="text" id="f-tracking" placeholder="JNE-XXXXX" />
-                  </div>
-                  <div class="form-group full">
-                    <div class="toggle-wrap">
-                      <label class="toggle">
-                        <input type="checkbox" id="f-stamp" />
-                        <span class="toggle-slider"></span>
-                      </label>
-                      <span class="toggle-label">Stempel Terdeteksi</span>
-                    </div>
-                  </div>
-                  <div class="form-group full">
-                    <div class="toggle-wrap">
-                      <label class="toggle">
-                        <input type="checkbox" id="f-signature" />
-                        <span class="toggle-slider"></span>
-                      </label>
-                      <span class="toggle-label">Tanda Tangan Terdeteksi</span>
-                    </div>
-                  </div>
-                </div>
-                <div id="dynamic-fields" class="mt-16"></div>
-                <div class="mt-16">
-                  <button class="btn btn-primary" onclick="submitDocument()" style="width:100%">
-                    🚀 Submit & Jalankan Rule Engine
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="card">
-              <div class="card-header">
-                <div>
-                  <div class="section-title">🧾 Profil Rule Engine</div>
-                  <div class="section-sub">Aturan validasi untuk pelanggan terpilih</div>
-                </div>
-              </div>
-              <div class="card-body" id="customer-rules">
-                <div class="empty-state">
-                  <div class="icon">🏭</div>
-                  <p>Pilih pelanggan untuk melihat aturan validasi</p>
-                </div>
-              </div>
-            </div>
-            <div class="card" id="submit-result" style="display:none">
-              <div class="card-header">
-                <div class="section-title">📋 Hasil Verifikasi AI</div>
-              </div>
-              <div class="card-body" id="submit-result-body"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══ PAGE: VERIFICATION ════════════════════════════ -->
-      <div class="page" id="page-verification">
-        <div class="tabs">
-          <div class="tab active" onclick="setVerifTab('all', this)">Semua</div>
-          <div class="tab" onclick="setVerifTab('HIGH_CONFIDENCE', this)">✅ High Confidence</div>
-          <div class="tab" onclick="setVerifTab('MEDIUM_CONFIDENCE', this)">⚠️ Medium Confidence</div>
-          <div class="tab" onclick="setVerifTab('LOW_CONFIDENCE', this)">🔴 Low Confidence</div>
-        </div>
         <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Dokumen</th>
-                  <th>Pelanggan</th>
-                  <th>Cabang</th>
-                  <th>Confidence</th>
-                  <th>Issues</th>
-                  <th>SLA</th>
-                  <th>Tipe Delivery</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="verif-body">
-                <tr><td colspan="8"><div class="loader"><div class="spinner"></div></div></td></tr>
-              </tbody>
-            </table>
-          </div>
+          <h3>📤 Unggah Dokumen BA Balik</h3>
+          <div class="form-group"><label>Pilih Order <span>*</span></label><select id="sub-order-select"></select></div>
+          <div class="form-group"><label>Pilih File Dokumen <span>*</span></label><input type="file" id="sub-file"></div>
+          <button class="btn btn-primary" style="margin-top:15px" onclick="submitDocument()">🚀 Kirim ke ISDR Cabang</button>
         </div>
       </div>
 
-      <!-- ══ PAGE: ESCALATION ══════════════════════════════ -->
-      <div class="page" id="page-escalation">
-        <div class="section-header">
-          <div>
-            <div class="section-title">🚨 Prescriptive SLA Engine</div>
-            <div class="section-sub">Eskalasi otomatis multi-level — dokumen memerlukan tindakan segera</div>
-          </div>
-        </div>
-        <div id="esc-list">
-          <div class="loader"><div class="spinner"></div></div>
-        </div>
-      </div>
-
-      <!-- ══ PAGE: BRANCHES ════════════════════════════════ -->
-      <div class="page" id="page-branches">
-        <div class="section-header">
-          <div>
-            <div class="section-title">🏢 Vendor Quality Index (VQI)</div>
-            <div class="section-sub">Skor kepercayaan cabang — menentukan tingkat sampling audit</div>
-          </div>
-        </div>
-        <div id="branches-list">
-          <div class="loader"><div class="spinner"></div></div>
-        </div>
-      </div>
-
-      <!-- ══ PAGE: CUSTOMERS ═══════════════════════════════ -->
-      <div class="page" id="page-customers">
-        <div class="section-header">
-          <div>
-            <div class="section-title">🏭 Customer Rule Engine Profiles</div>
-            <div class="section-sub">Profil validasi khusus per pelanggan</div>
-          </div>
-        </div>
-        <div id="customers-list">
-          <div class="loader"><div class="spinner"></div></div>
-        </div>
-      </div>
-
-      <!-- ══ PAGE: AUDIT ═══════════════════════════════════ -->
-      <div class="page" id="page-audit">
-        <div class="section-header">
-          <div>
-            <div class="section-title">📋 Audit Log</div>
-            <div class="section-sub">50 aktivitas sistem terbaru</div>
-          </div>
-        </div>
+      <!-- ══ PAGE: CUSTOMER TRACKING ══ -->
+      <div class="page" id="page-customer-tracking">
         <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Waktu</th>
-                  <th>Aksi</th>
-                  <th>Dokumen</th>
-                  <th>Aktor</th>
-                  <th>Detail</th>
-                </tr>
-              </thead>
-              <tbody id="audit-body">
-                <tr><td colspan="5"><div class="loader"><div class="spinner"></div></div></td></tr>
-              </tbody>
-            </table>
-          </div>
+          <h3>📦 Order Saya</h3>
+          <div id="customer-order-list"></div>
         </div>
       </div>
 
-    </div><!-- /content -->
-  </main>
-</div><!-- /app -->
-
-<!-- ─── Modals ─────────────────────────────────────────────── -->
-<div class="modal-overlay" id="modal-verif">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">📋 Detail Verifikasi Dokumen</div>
-      <button class="modal-close" onclick="closeModal('modal-verif')">×</button>
     </div>
-    <div class="modal-body" id="modal-verif-body"></div>
-    <div class="modal-footer" id="modal-verif-footer"></div>
-  </div>
+  </main>
 </div>
 
-<div id="toast-container"></div>
-
-<!-- ─── JavaScript ─────────────────────────────────────────── -->
 <script>
-const API = window.location.origin;
-let customers = [];
-let branches = [];
-let verifFilter = 'all';
-let currentDocId = null;
+  let currentUser = null;
+  let token = localStorage.getItem('ispas_token');
 
-// ─── Navigation ────────────────────────────────────────────
-const pageMap = {
-  dashboard:    { title: 'Dashboard', sub: 'Ringkasan operasional verifikasi dokumen' },
-  submit:       { title: 'Submit Dokumen BA Balik', sub: 'VendorHUB — Upload dan validasi otomatis' },
-  verification: { title: 'Verifikasi Cabang', sub: 'Checklist terpersonalisasi per pelanggan' },
-  escalation:   { title: 'Eskalasi SLA', sub: 'Prescriptive SLA Engine — tindakan proaktif' },
-  branches:     { title: 'Cabang & VQI', sub: 'Vendor Quality Index — tingkat kepercayaan cabang' },
-  customers:    { title: 'Profil Pelanggan', sub: 'Customer-Specific Rule Engine Profiles' },
-  audit:        { title: 'Audit Log', sub: 'Rekam jejak aktivitas sistem' },
-};
+  const roleConfig = {
+    CS_SPIL: { title: 'CS SPIL', sub: 'Manajemen', menus: [['dashboard', '📊 Stats'], ['cs-users', '👤 Users'], ['cs-order', '📝 Orders'], ['config', '⚙️ Config']] },
+    CUSTOMER: { title: 'Customer', sub: 'Tracking', menus: [['dashboard', '📊 Stats'], ['customer-tracking', '📦 My Orders'], ['submit', '📤 Submit']] }
+  };
 
-function navigate(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick')?.includes(`'${page}'`)) n.classList.add('active');
-  });
-  const meta = pageMap[page];
-  document.getElementById('page-title').textContent = meta.title;
-  document.getElementById('page-sub').textContent = meta.sub;
-  loadPage(page);
-}
-
-function loadPage(page) {
-  if (page === 'dashboard') loadDashboard();
-  if (page === 'verification') loadVerification();
-  if (page === 'escalation') loadEscalations();
-  if (page === 'branches') loadBranches();
-  if (page === 'customers') loadCustomers();
-  if (page === 'audit') loadAuditLog();
-}
-
-// ─── Dashboard ──────────────────────────────────────────────
-async function loadDashboard() {
-  const [summary, docs, escs] = await Promise.all([
-    fetch(`${API}/api/dashboard/summary`).then(r => r.json()),
-    fetch(`${API}/api/documents`).then(r => r.json()),
-    fetch(`${API}/api/escalations`).then(r => r.json()),
-  ]);
-
-  // KPI Cards
-  document.getElementById('kpi-grid').innerHTML = `
-    <div class="kpi-card blue">
-      <div class="kpi-label">Total Dokumen</div>
-      <div class="kpi-value" style="color:var(--accent2)">${summary.total}</div>
-      <div class="kpi-sub">Seluruh periode aktif</div>
-    </div>
-    <div class="kpi-card green">
-      <div class="kpi-label">Terverifikasi</div>
-      <div class="kpi-value" style="color:var(--green)">${summary.verified}</div>
-      <div class="kpi-sub">Siap untuk penagihan</div>
-    </div>
-    <div class="kpi-card yellow">
-      <div class="kpi-label">Menunggu</div>
-      <div class="kpi-value" style="color:var(--yellow)">${summary.pending}</div>
-      <div class="kpi-sub">Perlu verifikasi cabang</div>
-    </div>
-    <div class="kpi-card red">
-      <div class="kpi-label">SLA Compliance</div>
-      <div class="kpi-value" style="color:${summary.slaCompliance >= 95 ? 'var(--green)' : summary.slaCompliance >= 80 ? 'var(--yellow)' : 'var(--red)'}">${summary.slaCompliance}%</div>
-      <div class="kpi-sub">Target: >95%</div>
-    </div>
-    <div class="kpi-card purple">
-      <div class="kpi-label">Siap Tagih</div>
-      <div class="kpi-value" style="color:var(--purple)">${summary.billingReady}</div>
-      <div class="kpi-sub">Billing ready to process</div>
-    </div>
-    <div class="kpi-card blue">
-      <div class="kpi-label">Avg Cycle Time</div>
-      <div class="kpi-value" style="color:var(--accent2)">${summary.avgCycleTimeDays}h</div>
-      <div class="kpi-sub">Target: <24 jam</div>
-    </div>
-  `;
-
-  // Confidence Distribution
-  document.getElementById('conf-dist').innerHTML = `
-    <div style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="text-green" style="font-weight:700">✅ High Confidence</span>
-        <span class="mono">${summary.highConf} dok</span>
-      </div>
-      <div class="progress-wrap">
-        <div class="progress-bar" style="width:${summary.total ? (summary.highConf/summary.total*100).toFixed(0) : 0}%;background:var(--green)"></div>
-      </div>
-    </div>
-    <div style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="text-yellow" style="font-weight:700">⚠️ Medium Confidence</span>
-        <span class="mono">${summary.medConf} dok</span>
-      </div>
-      <div class="progress-wrap">
-        <div class="progress-bar" style="width:${summary.total ? (summary.medConf/summary.total*100).toFixed(0) : 0}%;background:var(--yellow)"></div>
-      </div>
-    </div>
-    <div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="text-red" style="font-weight:700">🔴 Low Confidence</span>
-        <span class="mono">${summary.lowConf} dok</span>
-      </div>
-      <div class="progress-wrap">
-        <div class="progress-bar" style="width:${summary.total ? (summary.lowConf/summary.total*100).toFixed(0) : 0}%;background:var(--red)"></div>
-      </div>
-    </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">SLA Breach Risk</div>
-      <div style="font-size:24px;font-family:var(--mono);font-weight:700;color:${summary.slaBreach > 0 ? 'var(--red)' : 'var(--green)'}">
-        ${summary.slaBreach} dokumen
-      </div>
-      <div style="font-size:12px;color:var(--text-muted)">melampaui batas SLA</div>
-    </div>
-  `;
-
-  // Escalation Summary
-  const escHtml = escs.slice(0, 3).map(e => `
-    <div class="esc-card level-${e.escalationLevel}">
-      <div class="esc-title">${e.customerName}</div>
-      <div class="esc-meta">${e.branchName} · ${Math.abs(e.slaStatus.daysRemaining)} hari ${e.slaStatus.daysRemaining < 0 ? 'MELAMPAUI' : 'tersisa'}</div>
-      <div class="esc-action">⚡ ${e.action}</div>
-    </div>
-  `).join('') || '<div class="empty-state"><div class="icon">✅</div><p>Tidak ada eskalasi aktif</p></div>';
-  document.getElementById('esc-summary').innerHTML = escHtml;
-
-  // Recent docs
-  const recent = docs.slice(-10).reverse();
-  document.getElementById('recent-docs-body').innerHTML = recent.map(d => `
-    <tr>
-      <td class="mono" style="font-size:11px;color:var(--text-muted)">${d.id.slice(0,8)}...</td>
-      <td>${d.customerName}</td>
-      <td class="dim">${d.branchName}</td>
-      <td>${confBadge(d.confidenceLevel, d.confidenceScore)}</td>
-      <td>${slaBadge(d.slaStatus)}</td>
-      <td>${statusBadge(d.status)}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="openVerifModal('${d.id}')">Detail</button></td>
-    </tr>
-  `).join('');
-
-  // Nav badges
-  document.getElementById('nav-pending').textContent = docs.filter(d => d.status === 'PENDING_VERIFICATION').length;
-  document.getElementById('nav-esc').textContent = escs.length;
-}
-
-// ─── Verification ────────────────────────────────────────────
-function setVerifTab(filter, el) {
-  verifFilter = filter;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  loadVerification();
-}
-
-async function loadVerification() {
-  const url = verifFilter === 'all'
-    ? `${API}/api/documents?status=PENDING_VERIFICATION`
-    : `${API}/api/documents?status=PENDING_VERIFICATION&confidenceLevel=${verifFilter}`;
-  const docs = await fetch(url).then(r => r.json());
-
-  document.getElementById('verif-body').innerHTML = docs.length ? docs.map(d => `
-    <tr>
-      <td class="mono" style="font-size:11px;color:var(--text-muted)">${d.id.slice(0,8)}...</td>
-      <td>${d.customerName}</td>
-      <td class="dim">${d.branchName}</td>
-      <td>${confBadge(d.confidenceLevel, d.confidenceScore)}</td>
-      <td style="font-size:12px;color:var(--red)">${d.validationIssues?.length || 0} isu</td>
-      <td>${slaBadge(d.slaStatus)}</td>
-      <td><span style="font-size:12px;color:${d.deliveryType === 'DIGITAL' ? 'var(--green)' : 'var(--yellow)'}">
-        ${d.deliveryType === 'DIGITAL' ? '🖥️ Digital' : '📦 Fisik Wajib'}
-      </span></td>
-      <td>
-        <button class="btn btn-primary btn-sm" onclick="openVerifModal('${d.id}')">Verifikasi</button>
-      </td>
-    </tr>
-  `).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="icon">✅</div><p>Tidak ada dokumen pending</p></div></td></tr>`;
-}
-
-// ─── Verif Modal ─────────────────────────────────────────────
-async function openVerifModal(docId) {
-  currentDocId = docId;
-  const docs = await fetch(`${API}/api/documents`).then(r => r.json());
-  const doc = docs.find(d => d.id === docId);
-  if (!doc) return;
-
-  const checklist = buildChecklist(doc);
-
-  document.getElementById('modal-verif-body').innerHTML = `
-    <div style="margin-bottom:16px">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">DOKUMEN ID</div>
-      <div class="mono" style="font-size:13px">${doc.id}</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div><div class="text-muted" style="font-size:11px;font-family:var(--mono)">PELANGGAN</div><div style="font-weight:700">${doc.customerName}</div></div>
-      <div><div class="text-muted" style="font-size:11px;font-family:var(--mono)">CABANG</div><div>${doc.branchName}</div></div>
-      <div><div class="text-muted" style="font-size:11px;font-family:var(--mono)">CONFIDENCE</div>${confBadge(doc.confidenceLevel, doc.confidenceScore)}</div>
-      <div><div class="text-muted" style="font-size:11px;font-family:var(--mono)">SLA STATUS</div>${slaBadge(doc.slaStatus)}</div>
-      <div><div class="text-muted" style="font-size:11px;font-family:var(--mono)">DELIVERY</div><span style="font-size:13px">${doc.deliveryType === 'DIGITAL' ? '🖥️ Digital' : '📦 Fisik Wajib'}</span></div>
-      <div><div class="text-muted" style="font-size:11px;font-family:var(--mono)">AUDIT REQUIRED</div><span style="font-size:13px">${doc.auditRequired ? '✅ Ya' : '— Tidak'}</span></div>
-    </div>
-
-    <div style="margin-bottom:16px">
-      <div class="section-title" style="margin-bottom:10px">📋 Checklist Terpersonalisasi</div>
-      ${checklist}
-    </div>
-
-    ${doc.deliveryType === 'PHYSICAL_REQUIRED' ? `
-    <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px;margin-bottom:16px">
-      <div style="font-weight:700;font-size:13px;color:var(--yellow);margin-bottom:4px">📦 Compliance Gateway — Fisik Wajib</div>
-      <div style="font-size:12px;color:var(--text-dim)">
-        Pelanggan ini mewajibkan dokumen fisik untuk audit. Scan digital digunakan untuk verifikasi dan billing awal.
-        Fisik asli harus dikirim dari cabang ke pelanggan pengirim.
-        ${doc.trackingNumber ? `<br><strong>Nomor Resi:</strong> ${doc.trackingNumber}` : ''}
-      </div>
-    </div>` : ''}
-
-    <div>
-      <label style="display:block;font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-bottom:5px">CATATAN VERIFIKASI</label>
-      <textarea id="verif-notes" rows="2" placeholder="Opsional: tambahkan catatan..." style="width:100%"></textarea>
-    </div>
-  `;
-
-  const footer = document.getElementById('modal-verif-footer');
-  if (doc.status === 'PENDING_VERIFICATION') {
-    footer.innerHTML = `
-      <button class="btn btn-red btn-sm" onclick="verifyDoc('REJECT')">🚫 Tolak</button>
-      <button class="btn btn-ghost btn-sm" onclick="verifyDoc('REQUEST_REVISION')">✏️ Minta Revisi</button>
-      <button class="btn btn-green" onclick="verifyDoc('APPROVE')">✅ Setujui — Zero-Defect</button>
-    `;
-  } else {
-    footer.innerHTML = `<div style="color:var(--text-muted);font-size:13px">Dokumen sudah diproses: <strong>${doc.status}</strong></div>`;
+  async function apiFetch(url, options = {}) {
+    options.headers = { ...options.headers, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const res = await fetch(url, options);
+    if (res.status === 401) return handleLogout();
+    return res.json();
   }
 
-  document.getElementById('modal-verif').classList.add('open');
-}
+  async function handleLogin() {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    const errorDiv = document.getElementById('login-error');
+    errorDiv.innerText = '';
 
-function buildChecklist(doc) {
-  if (!doc.validationIssues) return '<div class="text-muted">Tidak ada data checklist.</div>';
-  const issues = doc.validationIssues || [];
-  const issueKeys = issues.map(i => i.field);
-
-  const allChecks = [
-    { label: 'Jumlah Halaman', isIssue: issues.find(i => i.field === 'Jumlah Halaman') },
-    { label: 'Stempel', isIssue: issues.find(i => i.field === 'Stempel') },
-    { label: 'Tanda Tangan', isIssue: issues.find(i => i.field === 'Tanda Tangan') },
-    ...issues.filter(i => !['Jumlah Halaman','Stempel','Tanda Tangan'].includes(i.field)).map(i => ({ label: i.field, isIssue: i })),
-  ];
-
-  const passed = ['Jumlah Halaman','Stempel','Tanda Tangan'].filter(l => !issueKeys.includes(l));
-
-  return [
-    ...issues.map(i => `
-      <div class="checklist-item fail">
-        <span class="check-icon">❌</span>
-        <div>
-          <div class="check-field">${i.field}</div>
-          <div class="check-issue">${i.issue}</div>
-        </div>
-        <span class="severity-tag ${i.severity}">${i.severity}</span>
-      </div>
-    `),
-    ...passed.map(l => `
-      <div class="checklist-item pass">
-        <span class="check-icon">✅</span>
-        <div><div class="check-field">${l}</div><div class="check-ok">Sesuai persyaratan</div></div>
-      </div>
-    `),
-  ].join('') || '<div class="checklist-item pass"><span class="check-icon">✅</span><div><div class="check-field">Semua Persyaratan</div><div class="check-ok">Dokumen memenuhi semua syarat pelanggan</div></div></div>';
-}
-
-async function verifyDoc(action) {
-  if (!currentDocId) return;
-  const notes = document.getElementById('verif-notes').value;
-  const res = await fetch(`${API}/api/documents/${currentDocId}/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, verifiedBy: 'Verifikator Cabang (Demo)', notes }),
-  }).then(r => r.json());
-
-  closeModal('modal-verif');
-  const msgMap = { APPROVE: '✅ Dokumen disetujui! Billing siap diproses.', REJECT: '🚫 Dokumen ditolak.', REQUEST_REVISION: '✏️ Permintaan revisi dikirim.' };
-  const typeMap = { APPROVE: 'success', REJECT: 'error', REQUEST_REVISION: 'warning' };
-  toast(msgMap[action], typeMap[action]);
-  loadVerification();
-  loadDashboard();
-}
-
-// ─── Escalations ─────────────────────────────────────────────
-async function loadEscalations() {
-  const escs = await fetch(`${API}/api/escalations`).then(r => r.json());
-  document.getElementById('esc-list').innerHTML = escs.length ? escs.map(e => `
-    <div class="esc-card level-${e.escalationLevel}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div class="esc-title">${e.customerName}</div>
-          <div class="esc-meta">${e.branchName} · Dokumen ID: ${e.documentId.slice(0,8)}...</div>
-          <div class="esc-meta" style="margin-top:4px">
-            ${e.slaStatus.daysRemaining < 0
-              ? `<span style="color:var(--red);font-weight:700">⛔ ${Math.abs(e.slaStatus.daysRemaining)} hari MELAMPAUI SLA</span>`
-              : `<span style="color:var(--yellow)">⏳ ${e.slaStatus.daysRemaining} hari tersisa</span>`
-            }
-            &nbsp;·&nbsp; Progress: ${e.slaStatus.percentUsed}% SLA terpakai
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          <span style="font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;background:rgba(239,68,68,0.15);color:var(--red)">
-            LEVEL ${e.escalationLevel}
-          </span>
-          <div class="progress-wrap" style="width:120px">
-            <div class="progress-bar" style="width:${e.slaStatus.percentUsed}%;background:${e.slaStatus.percentUsed > 90 ? 'var(--red)' : e.slaStatus.percentUsed > 70 ? 'var(--yellow)' : 'var(--green)'}"></div>
-          </div>
-        </div>
-      </div>
-      <div class="esc-action" style="margin-top:10px">⚡ ${e.action}</div>
-      <div class="esc-notify">Notifikasi ke: ${e.notifyTo.join(', ')}</div>
-      <div style="margin-top:10px">
-        <button class="btn btn-ghost btn-sm" onclick="openVerifModal('${e.documentId}')">Buka Dokumen</button>
-        <button class="btn btn-ghost btn-sm" onclick="toast('Notifikasi WhatsApp dikirim ke ${e.notifyTo[0]}','info')">📱 Kirim Notifikasi</button>
-      </div>
-    </div>
-  `).join('') : `<div class="empty-state"><div class="icon">✅</div><p>Tidak ada eskalasi aktif saat ini</p></div>`;
-}
-
-// ─── Branches ────────────────────────────────────────────────
-async function loadBranches() {
-  const branches = await fetch(`${API}/api/branches`).then(r => r.json());
-  document.getElementById('branches-list').innerHTML = branches.map(b => {
-    const vqi = b.vqi;
-    const color = vqi >= 85 ? '#10b981' : vqi >= 70 ? '#f59e0b' : '#ef4444';
-    const tier = vqi >= 85 ? '🟢 Jalur Hijau' : vqi >= 70 ? '🟡 Audit 15%' : '🔴 Audit 50%';
-    const circumference = 2 * Math.PI * 24;
-    const dashoffset = circumference - (vqi / 100) * circumference;
-
-    return `
-    <div class="branch-card">
-      <div class="vqi-ring">
-        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" width="60" height="60">
-          <circle cx="30" cy="30" r="24" fill="none" stroke="var(--bg)" stroke-width="6"/>
-          <circle cx="30" cy="30" r="24" fill="none" stroke="${color}" stroke-width="6"
-            stroke-dasharray="${circumference}" stroke-dashoffset="${dashoffset}" stroke-linecap="round"/>
-        </svg>
-        <div class="vqi-num" style="color:${color}">${vqi}</div>
-      </div>
-      <div class="branch-info">
-        <div class="branch-name">${b.name}</div>
-        <div class="branch-region">${b.region}</div>
-        <div class="branch-metrics">
-          <div class="branch-metric">
-            <div class="branch-metric-label">Akurasi</div>
-            <div class="branch-metric-value" style="color:var(--green)">${b.metrics.accuracyRate}%</div>
-          </div>
-          <div class="branch-metric">
-            <div class="branch-metric-label">Cycle Time</div>
-            <div class="branch-metric-value" style="color:var(--accent2)">${b.metrics.avgCycleTimeDays}h</div>
-          </div>
-          <div class="branch-metric">
-            <div class="branch-metric-label">SLA OK</div>
-            <div class="branch-metric-value" style="color:var(--yellow)">${b.metrics.slaComplianceRate}%</div>
-          </div>
-        </div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Tier Audit</div>
-        <div style="font-size:13px;font-weight:700;color:${color}">${tier}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Sample ${b.auditSampleRate}%</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ─── Customers ───────────────────────────────────────────────
-async function loadCustomers() {
-  const customers = await fetch(`${API}/api/customers`).then(r => r.json());
-  document.getElementById('customers-list').innerHTML = customers.map(c => `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-header">
-        <div>
-          <div class="section-title">${c.name}</div>
-          <div class="section-sub">${c.segment} · SLA: ${c.slaDays} hari · 
-            <span style="color:${c.deliveryType === 'DIGITAL' ? 'var(--green)' : 'var(--yellow)'}">
-              ${c.deliveryType === 'DIGITAL' ? '🖥️ Digital' : '📦 Fisik Wajib'}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">Aturan Validasi</div>
-        <div class="rule-item"><strong>Jumlah Halaman Minimum:</strong> ${c.minPages} halaman</div>
-        <div class="rule-item"><strong>Stempel Wajib:</strong> ${c.requiresStamp ? 'Ya' : 'Tidak'}</div>
-        <div class="rule-item"><strong>Tanda Tangan Wajib:</strong> ${c.requiresSignature ? 'Ya' : 'Tidak'}</div>
-        ${c.requiredFields.map(f => `
-          <div class="rule-item">
-            <strong>${f.label}:</strong> Wajib diisi
-            ${f.format ? `· Format: <code style="font-family:var(--mono);background:var(--bg);padding:1px 5px;border-radius:3px">${f.formatLabel}</code>` : ''}
-            · Bobot: ${f.weight}x
-          </div>
-        `).join('')}
-        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg);border-radius:6px;">
-          📝 ${c.notes}
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ─── Audit Log ────────────────────────────────────────────────
-async function loadAuditLog() {
-  const logs = await fetch(`${API}/api/audit-logs`).then(r => r.json());
-  document.getElementById('audit-body').innerHTML = logs.map(l => `
-    <tr>
-      <td class="mono dim" style="font-size:11px">${new Date(l.timestamp).toLocaleString('id-ID')}</td>
-      <td><span style="font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.1);color:var(--accent2)">${l.action}</span></td>
-      <td class="mono dim" style="font-size:11px">${l.documentId.slice(0,8)}...</td>
-      <td style="font-size:12px">${l.actor}</td>
-      <td class="dim" style="font-size:12px">${l.details}</td>
-    </tr>
-  `).join('');
-}
-
-// ─── Submit Form ─────────────────────────────────────────────
-async function initSubmitForm() {
-  const [custs, brs] = await Promise.all([
-    fetch(`${API}/api/customers`).then(r => r.json()),
-    fetch(`${API}/api/branches`).then(r => r.json()),
-  ]);
-  customers = custs; branches = brs;
-
-  const custSel = document.getElementById('f-customer');
-  custSel.innerHTML = '<option value="">— Pilih Pelanggan —</option>' + custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-  const brSel = document.getElementById('f-branch');
-  brSel.innerHTML = '<option value="">— Pilih Cabang —</option>' + brs.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-}
-
-function onCustomerChange() {
-  const cId = document.getElementById('f-customer').value;
-  const customer = customers.find(c => c.id === cId);
-  if (!customer) {
-    document.getElementById('dynamic-fields').innerHTML = '';
-    document.getElementById('customer-rules').innerHTML = '<div class="empty-state"><div class="icon">🏭</div><p>Pilih pelanggan untuk melihat aturan validasi</p></div>';
-    return;
+    try {
+      const res = await fetch('/api/login', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ username, password }) 
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        token = data.token;
+        currentUser = data.user;
+        localStorage.setItem('ispas_token', token);
+        localStorage.setItem('ispas_user', JSON.stringify(currentUser));
+        initApp();
+      } else {
+        errorDiv.innerText = data.error || 'Terjadi kesalahan saat login.';
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      errorDiv.innerText = 'Gagal terhubung ke server. Silakan coba lagi.';
+    }
   }
 
-  // Dynamic fields
-  document.getElementById('dynamic-fields').innerHTML = `
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Field Khusus Pelanggan</div>
-    <div class="form-grid">
-      ${customer.requiredFields.map(f => `
-        <div class="form-group">
-          <label>${f.label}${f.weight >= 2 ? ' <span style="color:var(--red)">*</span>' : ''}</label>
-          <input type="text" id="ff-${f.key}" placeholder="${f.formatLabel || '...'}" />
+  function handleLogout() {
+    token = null;
+    currentUser = null;
+    localStorage.removeItem('ispas_token');
+    localStorage.removeItem('ispas_user');
+    document.getElementById('login-page').style.display = 'flex';
+    document.getElementById('app-container').classList.remove('active');
+  }
+
+  function initApp() {
+    if (!token) return;
+    currentUser = JSON.parse(localStorage.getItem('ispas_user'));
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app-container').classList.add('active');
+    document.getElementById('user-info').innerText = `${currentUser.username} (${currentUser.role})`;
+    
+    // Tampilkan tombol Hubungi CS hanya untuk Customer
+    document.getElementById('btn-contact-cs').style.display = currentUser.role === 'CUSTOMER' ? 'block' : 'none';
+
+    const config = roleConfig[currentUser.role];
+    document.getElementById('page-title').innerText = config.title;
+    document.getElementById('page-sub').innerText = config.sub;
+    document.getElementById('sidebar-nav').innerHTML = config.menus.map(m => `<div class="nav-item" onclick="navigate('${m[0]}')">${m[1]}</div>`).join('');
+    
+    navigate('dashboard');
+    loadData();
+  }
+
+  function navigate(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const targetPage = document.getElementById('page-' + id);
+    if (targetPage) targetPage.classList.add('active');
+    
+    if (id === 'contact-cs') {
+      document.getElementById('page-title').innerText = 'Hubungi CS';
+      document.getElementById('page-sub').innerText = 'Kirim Email';
+    }
+  }
+
+  async function sendContactEmail() {
+    const subject = document.getElementById('contact-subject').value;
+    const message = document.getElementById('contact-message').value;
+    
+    const res = await apiFetch('/api/contact-cs', { method:'POST', body:JSON.stringify({ subject, message }) });
+    if(res.error) return alert(res.error);
+    
+    alert('Berhasil! Email Anda telah dikirim ke tim Customer Service.');
+    document.getElementById('contact-subject').value = '';
+    document.getElementById('contact-message').value = '';
+    navigate('dashboard');
+  }
+
+  async function loadData() {
+    const stats = await apiFetch('/api/dashboard/summary');
+    document.getElementById('dashboard-stats').innerHTML = `<div class="card"><h4>Orders</h4><h2>${stats.orders}</h2></div><div class="card"><h4>Pending</h4><h2>${stats.pending}</h2></div>`;
+    
+    const logs = await apiFetch('/api/audit-logs');
+    document.getElementById('audit-list').innerHTML = logs.map(l => `<div>[${new Date(l.timestamp).toLocaleTimeString()}] ${l.details}</div>`).join('');
+
+    if (currentUser.role === 'CS_SPIL') {
+      const custs = await apiFetch('/api/customers');
+      const custOptions = custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      document.getElementById('user-cust-id').innerHTML = custOptions;
+      document.getElementById('cs-cust-select').innerHTML = custOptions;
+      const users = await apiFetch('/api/users');
+      document.getElementById('user-list').innerHTML = users.filter(u => u.username !== 'cs_admin').map(u => `<tr><td>${u.username}</td><td>${u.email}</td><td>${u.customerId}</td></tr>`).join('');
+    }
+
+    const ords = await apiFetch('/api/orders');
+    if (document.getElementById('sub-order-select')) {
+      document.getElementById('sub-order-select').innerHTML = '<option value="">Pilih Order</option>' + ords.map(o => `<option value="${o.id}">${o.orderNumber}</option>`).join('');
+    }
+
+    if (currentUser.role === 'CUSTOMER') {
+      document.getElementById('customer-order-list').innerHTML = ords.map(o => `
+        <div class="card" style="background:var(--bg3)">
+          <div style="display:flex; justify-content:space-between"><strong>Order: ${o.orderNumber}</strong> <span class="status-badge ${o.status}">${o.status}</span></div>
+          <p style="font-size:12px; margin-top:5px;">Driver: ${o.driverName} | Plat: ${o.truckPlate}</p>
+          <p style="font-size:12px">Route: ${o.origin} → ${o.destination} | Barang: ${o.goodsDescription}</p>
         </div>
-      `).join('')}
-    </div>
-  `;
+      `).join('');
+    }
+  }
 
-  // Rules panel
-  document.getElementById('customer-rules').innerHTML = `
-    <div style="margin-bottom:12px">
-      <div style="font-weight:700;font-size:15px">${customer.name}</div>
-      <div style="font-size:12px;color:var(--text-muted)">${customer.segment} · SLA ${customer.slaDays} hari</div>
-    </div>
-    <div class="rule-item"><strong>Min. Halaman:</strong> ${customer.minPages}</div>
-    <div class="rule-item"><strong>Stempel:</strong> ${customer.requiresStamp ? '✅ Wajib' : '— Opsional'}</div>
-    <div class="rule-item"><strong>Tanda Tangan:</strong> ${customer.requiresSignature ? '✅ Wajib' : '— Opsional'}</div>
-    <div class="rule-item"><strong>Delivery Type:</strong> ${customer.deliveryType === 'DIGITAL' ? '🖥️ Digital (e-POD)' : '📦 Fisik Wajib'}</div>
-    <div style="height:1px;background:var(--border);margin:12px 0"></div>
-    ${customer.requiredFields.map(f => `
-      <div class="rule-item">
-        <strong>${f.label}</strong>
-        ${f.format ? `<br><span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">Format: ${f.formatLabel}</span>` : ''}
-        <br><span style="font-size:11px;color:var(--text-muted)">Bobot error: ${f.weight}x</span>
-      </div>
-    `).join('')}
-    <div style="margin-top:12px;font-size:11px;color:var(--text-muted);padding:8px;background:var(--bg);border-radius:6px">${customer.notes}</div>
-  `;
-}
+  async function createUserAccount() {
+    const data = { 
+      username: document.getElementById('user-name').value, 
+      password: document.getElementById('user-pass').value, 
+      email: document.getElementById('user-email').value, 
+      phone: document.getElementById('user-phone').value,
+      customerId: document.getElementById('user-cust-id').value 
+    };
+    const res = await apiFetch('/api/users', { method:'POST', body:JSON.stringify(data) });
+    if(res.error) return alert(res.error);
+    alert('Akun berhasil dibuat! Notifikasi dikirim.');
+    loadData();
+  }
 
-async function submitDocument() {
-  const customerId = document.getElementById('f-customer').value;
-  const branchId = document.getElementById('f-branch').value;
-  const pageCount = parseInt(document.getElementById('f-pages').value) || 1;
-  const trackingNumber = document.getElementById('f-tracking').value;
-  const hasStamp = document.getElementById('f-stamp').checked;
-  const hasSignature = document.getElementById('f-signature').checked;
+  async function submitOrder() {
+    const data = { 
+      orderNumber: document.getElementById('cs-order-num').value, 
+      customerId: document.getElementById('cs-cust-select').value, 
+      origin: document.getElementById('cs-origin').value, 
+      destination: document.getElementById('cs-dest').value,
+      driverName: document.getElementById('cs-driver').value,
+      truckPlate: document.getElementById('cs-plate').value,
+      goodsDescription: document.getElementById('cs-goods').value,
+      shippingDate: document.getElementById('cs-date').value
+    };
+    const res = await apiFetch('/api/orders', { method:'POST', body:JSON.stringify(data) });
+    if(res.error) return alert(res.error);
+    alert('Surat Jalan Berhasil Diterbitkan!');
+    loadData();
+  }
 
-  if (!customerId || !branchId) { toast('Pilih pelanggan dan cabang terlebih dahulu', 'warning'); return; }
+  async function submitDocument() {
+    const orderId = document.getElementById('sub-order-select').value;
+    const file = document.getElementById('sub-file').files[0];
+    const data = { orderId, documentData: { fileName: file ? file.name : '' } };
+    const res = await apiFetch('/api/documents/submit', { method:'POST', body:JSON.stringify(data) });
+    if(res.error) return alert(res.error);
+    alert('Dokumen Terkirim!');
+    loadData();
+  }
 
-  const customer = customers.find(c => c.id === customerId);
-  const fields = {};
-  customer.requiredFields.forEach(f => {
-    const el = document.getElementById('ff-' + f.key);
-    if (el) fields[f.key] = el.value;
-  });
-
-  const res = await fetch(`${API}/api/documents/submit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ customerId, branchId, documentData: { fields, pageCount, hasStamp, hasSignature, trackingNumber } }),
-  }).then(r => r.json());
-
-  const doc = res.document;
-  const levelColor = { HIGH_CONFIDENCE: 'var(--green)', MEDIUM_CONFIDENCE: 'var(--yellow)', LOW_CONFIDENCE: 'var(--red)' };
-  const levelLabel = { HIGH_CONFIDENCE: 'HIGH ✅', MEDIUM_CONFIDENCE: 'MEDIUM ⚠️', LOW_CONFIDENCE: 'LOW 🔴' };
-
-  document.getElementById('submit-result').style.display = 'block';
-  document.getElementById('submit-result-body').innerHTML = `
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="font-family:var(--mono);font-size:36px;font-weight:700;color:${levelColor[doc.confidenceLevel]}">${doc.confidenceScore}%</div>
-      <div style="font-size:14px;font-weight:700;color:${levelColor[doc.confidenceLevel]}">${levelLabel[doc.confidenceLevel]}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Confidence Score</div>
-    </div>
-    ${doc.validationIssues?.length ? `
-      <div style="margin-bottom:12px">
-        <div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Isu Ditemukan</div>
-        ${doc.validationIssues.map(i => `
-          <div class="checklist-item fail">
-            <span class="check-icon">❌</span>
-            <div><div class="check-field">${i.field}</div><div class="check-issue">${i.issue}</div></div>
-            <span class="severity-tag ${i.severity}">${i.severity}</span>
-          </div>
-        `).join('')}
-      </div>
-    ` : `<div class="checklist-item pass"><span class="check-icon">✅</span><div><div class="check-field">Semua Persyaratan Terpenuhi</div><div class="check-ok">Dokumen lolos seluruh validasi</div></div></div>`}
-    <div style="margin-top:12px;font-size:12px;color:var(--text-muted)">SLA: ${doc.slaStatus.daysRemaining} hari tersisa · Audit: ${doc.auditRequired ? 'Ya' : 'Tidak'}</div>
-  `;
-
-  toast(res.message, doc.confidenceLevel === 'HIGH_CONFIDENCE' ? 'success' : doc.confidenceLevel === 'MEDIUM_CONFIDENCE' ? 'warning' : 'error');
-}
-
-// ─── Helpers ──────────────────────────────────────────────────
-function confBadge(level, score) {
-  const l = level?.replace('_CONFIDENCE', '') || 'LOW';
-  const label = { HIGH: 'HIGH', MEDIUM: 'MED', LOW: 'LOW' };
-  return `<span class="conf-badge ${l}">${label[l]} ${score || 0}%</span>`;
-}
-
-function slaBadge(sla) {
-  if (!sla) return '—';
-  const labels = { ON_TRACK: '✅ On Track', ALERT: '🔔 H-7', WARNING: '⚠️ H-3', CRITICAL: '🔥 H-1', BREACHED: '⛔ Melampaui' };
-  return `<span class="sla-badge ${sla.status}">${labels[sla.status] || sla.status} (${sla.daysRemaining}h)</span>`;
-}
-
-function statusBadge(status) {
-  const m = { PENDING_VERIFICATION: ['PENDING', 'Menunggu'], VERIFIED: ['VERIFIED', 'Terverifikasi'], REJECTED: ['REJECTED', 'Ditolak'], REVISION_REQUESTED: ['REVISION', 'Revisi'] };
-  const [cls, label] = m[status] || ['PENDING', status];
-  return `<span class="status-badge ${cls}">${label}</span>`;
-}
-
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-function toast(msg, type = 'info') {
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
-  document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 4000);
-}
-
-function refreshAll() { loadPage(document.querySelector('.nav-item.active')?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1] || 'dashboard'); toast('Data diperbarui', 'info'); }
-
-// ─── Clock ────────────────────────────────────────────────────
-function updateClock() {
-  document.getElementById('clock').textContent = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ─── Init ─────────────────────────────────────────────────────
-loadDashboard();
-initSubmitForm();
+  if (token) initApp();
+</script>
+</body>
+</html>
+();
 </script>
 </body>
 </html>
