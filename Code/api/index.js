@@ -11,6 +11,8 @@ const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const fs = require('fs');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = 'ispas-secret-key-2024';
@@ -19,10 +21,20 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Helper to load JSON safely
+function loadJSON(relPath) {
+  try {
+    const fullPath = path.join(__dirname, relPath);
+    return JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+  } catch (e) {
+    console.error(`Failed to load JSON: ${relPath}`, e.message);
+    return [];
+  }
+}
+
 // ─── Database ────────────────────────────────────────────────────────────────
-// Menggunakan require literal agar Vercel dapat mem-bundle file JSON ini secara otomatis
 const db = {
-  customers: require('../server/data/customers.json'),
+  customers: loadJSON('../server/data/customers.json'),
   users: [
     // Default CS Admin for testing
     { 
@@ -35,7 +47,7 @@ const db = {
     }
   ],
   documents: [],
-  branches: require('../server/data/branches.json'),
+  branches: loadJSON('../server/data/branches.json'),
   orders: [], 
   auditLogs: [],
 };
