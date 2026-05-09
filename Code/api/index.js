@@ -20,11 +20,11 @@ const JWT_SECRET = 'ispas-secret-key-2024';
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
-
 // Helper to load JSON safely
 function loadJSON(relPath) {
   try {
     const fullPath = path.join(__dirname, relPath);
+    if (!fs.existsSync(fullPath)) return [];
     return JSON.parse(fs.readFileSync(fullPath, 'utf8'));
   } catch (e) {
     console.error(`Failed to load JSON: ${relPath}`, e.message);
@@ -32,25 +32,41 @@ function loadJSON(relPath) {
   }
 }
 
+// Helper to save JSON safely
+function saveJSON(relPath, data) {
+  try {
+    const fullPath = path.join(__dirname, relPath);
+    fs.writeFileSync(fullPath, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error(`Failed to save JSON: ${relPath}`, e.message);
+    return false;
+  }
+}
+
 // ─── Database ────────────────────────────────────────────────────────────────
 const db = {
   customers: loadJSON('../server/data/customers.json'),
-  users: [
-    // Default CS Admin for testing
-    { 
-      id: 'admin-001', 
-      username: 'cs_admin', 
-      password: bcrypt.hashSync('admin123', 10), 
-      email: 'ispas.admin@gmail.com', 
-      role: 'CS_SPIL',
-      customerId: null 
-    }
-  ],
+  users: loadJSON('../server/data/users.json'),
   documents: [],
   branches: loadJSON('../server/data/branches.json'),
   orders: [], 
   auditLogs: [],
 };
+
+// Ensure at least one admin exists
+if (db.users.length === 0) {
+  db.users.push({ 
+    id: 'admin-001', 
+    username: 'cs_admin', 
+    password: bcrypt.hashSync('admin123', 10), 
+    email: 'ispas.admin@gmail.com', 
+    role: 'CS_SPIL',
+    customerId: null 
+  });
+  saveJSON('../server/data/users.json', db.users);
+}
+
 
 // ─── REAL NOTIFICATION LOGIC ─────────────────────────────────────────────────
 let smtpConfig = {
@@ -148,10 +164,15 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/users', authenticate, async (req, res) => {
   if (req.user.role !== 'CS_SPIL') return res.status(403).json({ error: 'Hanya CS yang dapat menambah user.' });
 
-  const { username, password, email, phone, customerId } = req.body;
+  const { username, password, email, phone, customerId, role } = req.body;
   
-  if (!username || !password || !email || !customerId || !phone) {
-    return res.status(400).json({ error: 'Seluruh kolom (Username, Password, Email, Phone, Customer) WAJIB diisi.' });
+  if (!username || !password || !email || !phone) {
+    return res.status(400).json({ error: 'Username, Password, Email, dan Phone WAJIB diisi.' });
+  }
+
+  const assignedRole = role || 'CUSTOMER';
+  if (assignedRole === 'CUSTOMER' && !customerId) {
+    return res.status(400).json({ error: 'Customer ID WAJIB diisi untuk role CUSTOMER.' });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -161,21 +182,30 @@ app.post('/api/users', authenticate, async (req, res) => {
     password: hashedPassword, 
     email, 
     phone,
-    role: 'CUSTOMER',
-    customerId, 
+    role: assignedRole,
+    customerId: assignedRole === 'CUSTOMER' ? customerId : null, 
     createdAt: new Date().toISOString() 
   };
   
   db.users.push(newUser);
+  saveJSON('../server/data/users.json', db.users);
 
   // Notifikasi Real
-  sendRealEmail(email, 'Aktivasi Akun ISPAS', `Halo ${username}, akun Anda aktif. Pass: ${password}`);
-  sendRealSMS(phone, `Halo ${username}, akun ISPAS Anda telah aktif. Gunakan email Anda untuk login.`);
+  sendRealEmail(email, 'Aktivasi Akun ISPAS', `Halo ${username}, akun Anda aktif dengan role ${assignedRole}.`);
+  sendRealSMS(phone, `Halo ${username}, akun ISPAS Anda telah aktif.`);
 
-  res.status(201).json({ success: true, user: { username, email, customerId } });
+  res.status(201).json({ success: true, user: { username, email, role: assignedRole } });
 });
 
-app.get('/api/users', authenticate, (req, res) => res.json(db.users.map(u => ({ username: u.username, email: u.email, customerId: u.customerId, createdAt: u.createdAt }))));
+app.get('/api/users', authenticate, (req, res) => {
+  res.json(db.users.map(u => ({ 
+    username: u.username, 
+    email: u.email, 
+    role: u.role,
+    customerId: u.customerId, 
+    createdAt: u.createdAt 
+  })));
+});
 
 // Poin 2: Create Order (Surat Jalan) with Mandatory Fields
 app.post('/api/orders', authenticate, (req, res) => {
