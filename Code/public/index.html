@@ -186,8 +186,11 @@
   let token = localStorage.getItem('ispas_token');
 
   const roleConfig = {
-    CS_SPIL: { title: 'CS SPIL', sub: 'Manajemen', menus: [['dashboard', '📊 Stats'], ['cs-users', '👤 Users'], ['cs-order', '📝 Orders'], ['config', '⚙️ Config']] },
-    CUSTOMER: { title: 'Customer', sub: 'Tracking', menus: [['dashboard', '📊 Stats'], ['customer-tracking', '📦 My Orders'], ['submit', '📤 Submit']] }
+    CS_SPIL: { title: 'CS SPIL', sub: 'Manajemen', menus: [['dashboard', '📊 Stats'], ['cs-users', '👤 Users'], ['cs-order', '📝 Orders']] },
+    CUSTOMER: { title: 'Customer', sub: 'Tracking', menus: [['dashboard', '📊 Stats'], ['customer-tracking', '📦 My Orders'], ['submit', '📤 Submit']] },
+    ISDR: { title: 'ISDR Cabang', sub: 'Verifikasi', menus: [['dashboard', '📊 Stats'], ['submit', '📥 Verifikasi']] },
+    ISDO: { title: 'ISDO Ops', sub: 'Monitoring', menus: [['dashboard', '📊 Stats'], ['cs-order', '📝 Monitoring']] },
+    VENDOR: { title: 'Vendor Trucking', sub: 'Operasional', menus: [['dashboard', '📊 Stats'], ['submit', '📤 Update Status']] }
   };
 
   async function apiFetch(url, options = {}) {
@@ -256,10 +259,7 @@
     document.getElementById('app-container').classList.add('active');
     document.getElementById('user-info').innerText = `${currentUser.username} (${currentUser.role})`;
     
-    // Tampilkan tombol Hubungi CS hanya untuk Customer
-    document.getElementById('btn-contact-cs').style.display = currentUser.role === 'CUSTOMER' ? 'block' : 'none';
-
-    const config = roleConfig[currentUser.role];
+    const config = roleConfig[currentUser.role] || { title: 'User', sub: 'Portal', menus: [['dashboard', '📊 Stats']] };
     document.getElementById('page-title').innerText = config.title;
     document.getElementById('page-sub').innerText = config.sub;
     document.getElementById('sidebar-nav').innerHTML = config.menus.map(m => `<div class="nav-item" onclick="navigate('${m[0]}')">${m[1]}</div>`).join('');
@@ -373,10 +373,6 @@
   }
 
   if (token) initApp();
-</script>
-</body>
-</html>
-();
 </script>
 </body>
 </html>
