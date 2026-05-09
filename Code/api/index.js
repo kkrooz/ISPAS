@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // ─── Database ────────────────────────────────────────────────────────────────
 const db = {
-  customers: require('../server/data/customers.json'),
+  customers: require(path.join(__dirname, '../server/data/customers.json')),
   users: [
     // Default CS Admin for testing
     { 
@@ -34,7 +34,7 @@ const db = {
     }
   ],
   documents: [],
-  branches: require('../server/data/branches.json'),
+  branches: require(path.join(__dirname, '../server/data/branches.json')),
   orders: [], 
   auditLogs: [],
 };
