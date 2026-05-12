@@ -99,27 +99,32 @@ let transporter = nodemailer.createTransport({
 });
 
 async function sendRealEmail(to, subject, text, fromName = "ISPAS System") {
-  console.log(`[EMAIL] Sending to: ${to}`);
+  console.log(`[EMAIL] Attempting to send to: ${to}`);
   if (!smtpConfig.pass) {
-    console.warn("[EMAIL SKIP] No App Password configured.");
+    const errorMsg = "[EMAIL FAIL] No App Password configured in Environment Variables.";
+    console.warn(errorMsg);
+    db.auditLogs.push({ id: uuidv4(), action: 'EMAIL_ERROR', actor: 'System', timestamp: new Date().toISOString(), details: errorMsg });
     return;
   }
   
   try { 
     await transporter.sendMail({ from: `"${fromName}" <${smtpConfig.user}>`, to, subject, text }); 
-    db.auditLogs.push({ 
-      id: uuidv4(), action: 'EMAIL_SENT', actor: fromName, 
-      timestamp: new Date().toISOString(), details: `Email terkirim ke ${to}` 
-    });
+    const successMsg = `Email berhasil terkirim ke ${to}`;
+    console.log(`[EMAIL SUCCESS] ${successMsg}`);
+    db.auditLogs.push({ id: uuidv4(), action: 'EMAIL_SENT', actor: fromName, timestamp: new Date().toISOString(), details: successMsg });
   } catch (e) { 
-    console.error("[SMTP ERROR]", e.message); 
+    const errorMsg = `[EMAIL ERROR] Gagal kirim ke ${to}: ${e.message}`;
+    console.error(errorMsg);
+    db.auditLogs.push({ id: uuidv4(), action: 'EMAIL_ERROR', actor: 'System', timestamp: new Date().toISOString(), details: errorMsg });
   }
 }
 
 async function sendRealWA(phone, message) {
-  console.log(`[WA] Sending to: ${phone}`);
+  console.log(`[WA] Attempting to send to: ${phone}`);
   if (!fonnteToken) {
-    console.warn("[WA SKIP] No Fonnte Token configured.");
+    const errorMsg = "[WA FAIL] No Fonnte Token configured in Environment Variables.";
+    console.warn(errorMsg);
+    db.auditLogs.push({ id: uuidv4(), action: 'WA_ERROR', actor: 'System', timestamp: new Date().toISOString(), details: errorMsg });
     return;
   }
 
@@ -131,15 +136,18 @@ async function sendRealWA(phone, message) {
     });
     const result = await response.json();
     if (result.status) {
-      db.auditLogs.push({ 
-        id: uuidv4(), action: 'WA_SENT', actor: 'ISPAS System', 
-        timestamp: new Date().toISOString(), details: `WA terkirim ke ${phone}` 
-      });
+      const successMsg = `WhatsApp berhasil terkirim ke ${phone}`;
+      console.log(`[WA SUCCESS] ${successMsg}`);
+      db.auditLogs.push({ id: uuidv4(), action: 'WA_SENT', actor: 'ISPAS System', timestamp: new Date().toISOString(), details: successMsg });
     } else {
-      console.error("[FONNTE ERROR]", result.reason);
+      const errorMsg = `[WA FONNTE ERROR] ${result.reason || 'Unknown error'}`;
+      console.error(errorMsg);
+      db.auditLogs.push({ id: uuidv4(), action: 'WA_ERROR', actor: 'System', timestamp: new Date().toISOString(), details: errorMsg });
     }
   } catch (e) {
-    console.error("[WA FETCH ERROR]", e.message);
+    const errorMsg = `[WA FETCH ERROR] Gagal terhubung ke Fonnte: ${e.message}`;
+    console.error(errorMsg);
+    db.auditLogs.push({ id: uuidv4(), action: 'WA_ERROR', actor: 'System', timestamp: new Date().toISOString(), details: errorMsg });
   }
 }
 
