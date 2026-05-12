@@ -156,6 +156,7 @@
             <div class="form-group"><label>Deskripsi Barang <span>*</span></label><input type="text" id="cs-goods"></div>
             <div class="form-group"><label>Tanggal Pengiriman <span>*</span></label><input type="date" id="cs-date"></div>
             <div class="form-group"><label>Batas Waktu (Deadline) <span>*</span></label><input type="datetime-local" id="cs-deadline"></div>
+            <div class="form-group"><label>Biaya Dasar (IDR) <span>*</span></label><input type="number" id="cs-base-cost" placeholder="Contoh: 1500000"></div>
           </div>
           <button class="btn btn-primary" style="margin-top:15px" onclick="submitOrder()">💾 Terbitkan Surat Jalan</button>
         </div>
@@ -329,19 +330,44 @@
 
     if (currentUser.role === 'CUSTOMER') {
       document.getElementById('customer-order-list').innerHTML = ords.map(o => `
-        <div class="card" style="background:var(--bg3)">
-          <div style="display:flex; justify-content:space-between"><strong>Order: ${o.orderNumber}</strong> <span class="status-badge ${o.status}">${o.status}</span></div>
-          <p style="font-size:12px; margin-top:5px;">Driver: ${o.driverName} | Plat: ${o.truckPlate}</p>
-          <p style="font-size:12px">Route: ${o.origin} → ${o.destination} | Barang: ${o.goodsDescription}</p>
+        <div class="card" style="background:var(--bg3); border-left: 4px solid ${o.warehouseStatus === 'WAITING_CONFIRMATION' ? 'var(--yellow)' : 'var(--green)'}">
+          <div style="display:flex; justify-content:space-between">
+            <strong>Order: ${o.orderNumber}</strong> 
+            <span class="status-badge ${o.status}">${o.status}</span>
+          </div>
+          <div style="margin-top:10px; font-size:12px">
+            <p>Route: ${o.origin} → ${o.destination}</p>
+            <p>Batas Waktu Awal: ${new Date(o.deadline).toLocaleString()}</p>
+            <p><strong>Jadwal Bongkar: ${new Date(o.unloadingSchedule).toLocaleString()}</strong></p>
+            <p>Status Gudang: <span style="color:var(--yellow)">${o.warehouseStatus}</span></p>
+            <p><strong>Total Biaya: Rp ${o.totalCost ? o.totalCost.toLocaleString() : '0'}</strong></p>
+          </div>
+          
+          ${o.warehouseStatus === 'WAITING_CONFIRMATION' ? `
+            <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px">
+              <p style="font-size:11px; color:var(--text-dim); margin-bottom:8px">Konfirmasi Kesiapan Gudang:</p>
+              <div style="display:flex; gap:10px">
+                <button class="btn btn-primary" style="background:var(--green); font-size:11px" onclick="updateSchedule('${o.id}', 'READY', '${o.deadline}')">Gudang Siap</button>
+                <button class="btn btn-ghost" style="font-size:11px" onclick="showRescheduleForm('${o.id}', '${o.deadline}')">Ubah Jadwal</button>
+              </div>
+              <div id="reschedule-form-${o.id}" style="display:none; margin-top:15px; background:var(--bg2); padding:10px; border-radius:5px; border:1px solid var(--border-bright)">
+                <label style="font-size:10px">Pilih Jadwal Baru:</label>
+                <input type="datetime-local" id="new-schedule-${o.id}" onchange="previewCost('${o.id}', '${o.deadline}', ${o.baseCost})" style="margin:5px 0">
+                <p id="cost-preview-${o.id}" style="font-size:11px; color:var(--orange); margin-bottom:10px"></p>
+                <button class="btn btn-primary" style="width:100%" onclick="submitNewSchedule('${o.id}')">Konfirmasi Jadwal & Biaya</button>
+              </div>
+            </div>
+          ` : ''}
         </div>
       `).join('');
     }
 
     if (currentUser.role === 'TRUCKER') {
       document.getElementById('trucker-order-list').innerHTML = ords.map(o => `
-        <div class="card" style="background:var(--bg3); border-left: 4px solid ${new Date(o.deadline) < new Date() ? 'var(--red)' : 'var(--orange)'}">
+        <div class="card" style="background:var(--bg3); border-left: 4px solid ${new Date(o.unloadingSchedule) < new Date() ? 'var(--red)' : 'var(--orange)'}">
           <div style="display:flex; justify-content:space-between"><strong>Order: ${o.orderNumber}</strong> <span class="status-badge ${o.status}">${o.status}</span></div>
-          <p style="font-size:12px; margin-top:5px;"><strong>Batas Waktu: ${new Date(o.deadline).toLocaleString()}</strong></p>
+          <p style="font-size:12px; margin-top:5px;"><strong>Jadwal Bongkar: ${new Date(o.unloadingSchedule).toLocaleString()}</strong></p>
+          <p style="font-size:12px; color:var(--text-dim)">Status Gudang: ${o.warehouseStatus}</p>
           <p style="font-size:12px">Route: ${o.origin} → ${o.destination} | Barang: ${o.goodsDescription}</p>
           <div style="margin-top:10px; font-size:11px; color:var(--text-muted)">ID Driver: ${o.driverName}</div>
         </div>
@@ -385,7 +411,8 @@
       truckPlate: document.getElementById('cs-plate').value,
       goodsDescription: document.getElementById('cs-goods').value,
       shippingDate: document.getElementById('cs-date').value,
-      deadline: document.getElementById('cs-deadline').value
+      deadline: document.getElementById('cs-deadline').value,
+      baseCost: document.getElementById('cs-base-cost').value
     };
     const res = await apiFetch('/api/orders', { method:'POST', body:JSON.stringify(data) });
     if(res.error) return alert(res.error);
@@ -397,6 +424,44 @@
     }
 
     loadData();
+  }
+
+  // --- NEW FUNCTIONS FOR WAREHOUSE SCHEDULING ---
+  function showRescheduleForm(id, deadline) {
+    document.getElementById(`reschedule-form-${id}`).style.display = 'block';
+    document.getElementById(`new-schedule-${id}`).value = deadline;
+  }
+
+  function previewCost(id, deadline, baseCost) {
+    const newSched = new Date(document.getElementById(`new-schedule-${id}`).value);
+    const oldDead = new Date(deadline);
+    const hourlyRate = 50000;
+    let extra = 0;
+
+    if (newSched > oldDead) {
+      const diffMs = newSched - oldDead;
+      const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+      extra = diffHours * hourlyRate;
+    }
+
+    document.getElementById(`cost-preview-${id}`).innerText = extra > 0 ? 
+      `Biaya Tambahan: Rp ${extra.toLocaleString()} (Total: Rp ${(parseFloat(baseCost) + extra).toLocaleString()})` : 
+      `Tidak ada biaya tambahan.`;
+  }
+
+  async function updateSchedule(id, status, schedule) {
+    const res = await apiFetch(`/api/orders/${id}/schedule`, { 
+      method: 'PUT', 
+      body: JSON.stringify({ warehouseStatus: status, unloadingSchedule: schedule }) 
+    });
+    if(res.error) return alert(res.error);
+    alert('Jadwal & Status Gudang Berhasil Diperbarui!');
+    loadData();
+  }
+
+  async function submitNewSchedule(id) {
+    const newSched = document.getElementById(`new-schedule-${id}`).value;
+    await updateSchedule(id, 'RESCHEDULED', newSched);
   }
 
   async function submitDocument() {

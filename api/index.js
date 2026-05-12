@@ -261,7 +261,7 @@ app.post('/api/notify-deadline', authenticate, async (req, res) => {
 
 // Create Order
 app.post('/api/orders', authenticate, (req, res) => {
-  const { orderNumber, customerId, origin, destination, driverName, truckPlate, goodsDescription, shippingDate, deadline } = req.body;
+  const { orderNumber, customerId, origin, destination, driverName, truckPlate, goodsDescription, shippingDate, deadline, baseCost } = req.body;
   const newOrder = { 
     id: uuidv4(), 
     orderNumber, 
@@ -274,10 +274,47 @@ app.post('/api/orders', authenticate, (req, res) => {
     shippingDate, 
     deadline, 
     status: 'OPEN', 
+    warehouseStatus: 'WAITING_CONFIRMATION',
+    unloadingSchedule: deadline,
+    baseCost: parseFloat(baseCost) || 0,
+    dynamicCost: 0,
+    totalCost: parseFloat(baseCost) || 0,
     createdAt: new Date().toISOString() 
   };
   db.orders.push(newOrder);
   res.status(201).json({ success: true, order: newOrder });
+});
+
+// Update Warehouse Schedule & Cost
+app.put('/api/orders/:id/schedule', authenticate, (req, res) => {
+  const { id } = req.params;
+  const { warehouseStatus, unloadingSchedule } = req.body;
+  const order = db.orders.find(o => o.id === id);
+
+  if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
+  if (req.user.role !== 'CUSTOMER' && req.user.role !== 'CS_SPIL') {
+    return res.status(403).json({ error: 'Hanya Customer atau CS yang dapat mengatur jadwal.' });
+  }
+
+  const oldDeadline = new Date(order.deadline);
+  const newSchedule = new Date(unloadingSchedule);
+  
+  // Logika Perhitungan Biaya: Rp 50.000 per jam keterlambatan
+  const hourlyRate = 50000;
+  let dynamicCost = 0;
+
+  if (newSchedule > oldDeadline) {
+    const diffMs = newSchedule - oldDeadline;
+    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+    dynamicCost = diffHours * hourlyRate;
+  }
+
+  order.warehouseStatus = warehouseStatus;
+  order.unloadingSchedule = unloadingSchedule;
+  order.dynamicCost = dynamicCost;
+  order.totalCost = order.baseCost + dynamicCost;
+
+  res.json({ success: true, order });
 });
 
 app.get('/api/orders', authenticate, (req, res) => {
