@@ -85,8 +85,10 @@ function authenticate(req, res, next) {
 // ─── REAL NOTIFICATION LOGIC ─────────────────────────────────────────────────
 let smtpConfig = {
   user: process.env.EMAIL_USER || 'ispas.system@gmail.com',
-  pass: process.env.EMAIL_PASS || 'your-app-password'
+  pass: process.env.EMAIL_PASS || '' // Use App Password
 };
+
+const fonnteToken = process.env.FONNTE_TOKEN || ''; // Fonnte API Token
 
 let transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -97,23 +99,48 @@ let transporter = nodemailer.createTransport({
 });
 
 async function sendRealEmail(to, subject, text, fromName = "ISPAS System") {
-  console.log(`[REAL EMAIL] To: ${to} | Subjek: ${subject}`);
-  db.auditLogs.push({ 
-    id: uuidv4(), action: 'EMAIL_SENT', actor: fromName, 
-    timestamp: new Date().toISOString(), details: `Email ke ${to}: ${subject}` 
-  });
+  console.log(`[EMAIL] Sending to: ${to}`);
+  if (!smtpConfig.pass) {
+    console.warn("[EMAIL SKIP] No App Password configured.");
+    return;
+  }
   
   try { 
     await transporter.sendMail({ from: `"${fromName}" <${smtpConfig.user}>`, to, subject, text }); 
-  } catch (e) { console.error("[SMTP ERROR]", e.message); }
+    db.auditLogs.push({ 
+      id: uuidv4(), action: 'EMAIL_SENT', actor: fromName, 
+      timestamp: new Date().toISOString(), details: `Email terkirim ke ${to}` 
+    });
+  } catch (e) { 
+    console.error("[SMTP ERROR]", e.message); 
+  }
 }
 
-function sendRealSMS(phone, message) {
-  console.log(`[REAL SMS] To: ${phone} | Msg: ${message}`);
-  db.auditLogs.push({ 
-    id: uuidv4(), action: 'SMS_SENT', actor: 'ISPAS System', 
-    timestamp: new Date().toISOString(), details: `SMS ke ${phone}: ${message}` 
-  });
+async function sendRealWA(phone, message) {
+  console.log(`[WA] Sending to: ${phone}`);
+  if (!fonnteToken) {
+    console.warn("[WA SKIP] No Fonnte Token configured.");
+    return;
+  }
+
+  try {
+    const response = await fetch('https://api.fonnte.com/send', {
+      method: 'POST',
+      headers: { 'Authorization': fonnteToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: phone, message: message })
+    });
+    const result = await response.json();
+    if (result.status) {
+      db.auditLogs.push({ 
+        id: uuidv4(), action: 'WA_SENT', actor: 'ISPAS System', 
+        timestamp: new Date().toISOString(), details: `WA terkirim ke ${phone}` 
+      });
+    } else {
+      console.error("[FONNTE ERROR]", result.reason);
+    }
+  } catch (e) {
+    console.error("[WA FETCH ERROR]", e.message);
+  }
 }
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
@@ -191,7 +218,7 @@ app.post('/api/users', authenticate, async (req, res) => {
   saveJSON('../server/data/users.json', db.users);
 
   sendRealEmail(email, 'Aktivasi ISPAS', `Halo ${username}, akun Anda aktif dengan role ${assignedRole}.`);
-  sendRealSMS(phone, `ISPAS: Akun ${username} aktif.`);
+  sendRealWA(phone, `ISPAS: Akun ${username} aktif.`);
   
   res.status(201).json({ success: true, user: { username, role: assignedRole } });
 });
@@ -214,7 +241,7 @@ app.post('/api/notify-deadline', authenticate, async (req, res) => {
   const message = `PENGINGAT ISPAS: Order ${orderNumber} memiliki batas waktu hingga ${new Date(deadline).toLocaleString()}. Mohon segera selesaikan pengiriman.`;
   
   if (user && user.phone) {
-    sendRealSMS(user.phone, message);
+    sendRealWA(user.phone, message);
   }
   
   if (user && user.email) {
