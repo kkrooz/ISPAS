@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ISPAS 2.0 PRO — Integrated Smart Verification</title>
+  <title>ISPAS 1.0 — Integrated Smart Verification</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -61,7 +61,7 @@
 <!-- LOGIN PAGE -->
 <div id="login-page">
   <div class="login-card">
-    <div class="brand" style="margin-bottom: 20px; font-size: 20px; text-align: center;">ISPAS 2.0</div>
+    <div class="brand" style="margin-bottom: 20px; font-size: 20px; text-align: center;">ISPAS 1.0</div>
     <div class="form-group">
       <label>Username</label>
       <input type="text" id="login-username" placeholder="cs_admin">
@@ -78,7 +78,7 @@
 <div class="app" id="app-container">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="brand">ISPAS 2.0 PRO</div>
+      <div class="brand">ISPAS 1.0</div>
       <div style="font-size:10px; color:var(--text-muted)" id="user-info">Not logged in</div>
     </div>
     <nav class="nav" id="sidebar-nav"></nav>
@@ -126,12 +126,13 @@
               <select id="user-role" onchange="toggleCustomerSelect()">
                 <option value="CUSTOMER">Customer (Eksternal)</option>
                 <option value="VENDOR">Vendor (Vendor Trucking)</option>
+                <option value="TRUCKER">Trucker (Driver Truk)</option>
                 <option value="ISDR">ISDR (Cabang)</option>
                 <option value="ISDO">ISDO (Operasional)</option>
                 <option value="CS_SPIL">CS SPIL (Admin)</option>
               </select>
             </div>
-            <div class="form-group" id="cust-select-group"><label>Pilih Perusahaan <span>*</span></label><select id="user-cust-id"></select></div>
+            <div class="form-group" id="cust-select-group"><label>Nama Perusahaan <span>*</span></label><input type="text" id="user-company-name" placeholder="Contoh: PT Maju Jaya"></div>
           </div>
           <button class="btn btn-primary" style="margin-top:15px" onclick="createUserAccount()">🚀 Buat Akun & Kirim Notifikasi</button>
         </div>
@@ -154,8 +155,18 @@
             <div class="form-group"><label>Plat Nomor Truk <span>*</span></label><input type="text" id="cs-plate"></div>
             <div class="form-group"><label>Deskripsi Barang <span>*</span></label><input type="text" id="cs-goods"></div>
             <div class="form-group"><label>Tanggal Pengiriman <span>*</span></label><input type="date" id="cs-date"></div>
+            <div class="form-group"><label>Batas Waktu (Deadline) <span>*</span></label><input type="datetime-local" id="cs-deadline"></div>
           </div>
           <button class="btn btn-primary" style="margin-top:15px" onclick="submitOrder()">💾 Terbitkan Surat Jalan</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: TRUCKER ORDERS ══ -->
+      <div class="page" id="page-trucker-orders">
+        <div class="card">
+          <h3>🚛 Tugas Pengiriman Saya</h3>
+          <p class="text-dim">Daftar pengiriman aktif dan batas waktu.</p>
+          <div id="trucker-order-list" style="margin-top:15px"></div>
         </div>
       </div>
 
@@ -188,6 +199,7 @@
   const roleConfig = {
     CS_SPIL: { title: 'CS SPIL', sub: 'Manajemen', menus: [['dashboard', '📊 Stats'], ['cs-users', '👤 Users'], ['cs-order', '📝 Orders']] },
     CUSTOMER: { title: 'Customer', sub: 'Tracking', menus: [['dashboard', '📊 Stats'], ['customer-tracking', '📦 My Orders'], ['submit', '📤 Submit']] },
+    TRUCKER: { title: 'Trucker', sub: 'Driver Portal', menus: [['dashboard', '📊 Stats'], ['trucker-orders', '🚛 My Deliveries']] },
     ISDR: { title: 'ISDR Cabang', sub: 'Verifikasi', menus: [['dashboard', '📊 Stats'], ['submit', '📥 Verifikasi']] },
     ISDO: { title: 'ISDO Ops', sub: 'Monitoring', menus: [['dashboard', '📊 Stats'], ['cs-order', '📝 Monitoring']] },
     VENDOR: { title: 'Vendor Trucking', sub: 'Operasional', menus: [['dashboard', '📊 Stats'], ['submit', '📤 Update Status']] }
@@ -302,10 +314,12 @@
     if (currentUser.role === 'CS_SPIL') {
       const custs = await apiFetch('/api/customers');
       const custOptions = custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-      document.getElementById('user-cust-id').innerHTML = custOptions;
       document.getElementById('cs-cust-select').innerHTML = custOptions;
       const users = await apiFetch('/api/users');
-      document.getElementById('user-list').innerHTML = users.filter(u => u.username !== 'cs_admin').map(u => `<tr><td>${u.username}</td><td>${u.email}</td><td>${u.role}</td><td>${u.customerId || '-'}</td></tr>`).join('');
+      document.getElementById('user-list').innerHTML = users.filter(u => u.username !== 'cs_admin').map(u => {
+        const cust = custs.find(c => c.id === u.customerId);
+        return `<tr><td>${u.username}</td><td>${u.email}</td><td>${u.role}</td><td>${cust ? cust.name : '-'}</td></tr>`;
+      }).join('');
     }
 
     const ords = await apiFetch('/api/orders');
@@ -322,6 +336,22 @@
         </div>
       `).join('');
     }
+
+    if (currentUser.role === 'TRUCKER') {
+      document.getElementById('trucker-order-list').innerHTML = ords.map(o => `
+        <div class="card" style="background:var(--bg3); border-left: 4px solid ${new Date(o.deadline) < new Date() ? 'var(--red)' : 'var(--orange)'}">
+          <div style="display:flex; justify-content:space-between"><strong>Order: ${o.orderNumber}</strong> <span class="status-badge ${o.status}">${o.status}</span></div>
+          <p style="font-size:12px; margin-top:5px;"><strong>Batas Waktu: ${new Date(o.deadline).toLocaleString()}</strong></p>
+          <p style="font-size:12px">Route: ${o.origin} → ${o.destination} | Barang: ${o.goodsDescription}</p>
+          <div style="margin-top:10px; font-size:11px; color:var(--text-muted)">ID Driver: ${o.driverName}</div>
+        </div>
+      `).join('');
+    }
+
+    if (currentUser.role === 'CS_SPIL') {
+       // Tambahan UI untuk CS di daftar order (opsional, tapi bagus untuk kirim notif)
+       // Untuk kesederhanaan, saya tambahkan tombol di log atau tempat lain jika perlu.
+    }
   }
 
   function toggleCustomerSelect() {
@@ -337,7 +367,7 @@
       email: document.getElementById('user-email').value, 
       phone: document.getElementById('user-phone').value,
       role: document.getElementById('user-role').value,
-      customerId: document.getElementById('user-cust-id').value 
+      companyName: document.getElementById('user-company-name').value 
     };
     const res = await apiFetch('/api/users', { method:'POST', body:JSON.stringify(data) });
     if(res.error) return alert(res.error);
@@ -354,11 +384,18 @@
       driverName: document.getElementById('cs-driver').value,
       truckPlate: document.getElementById('cs-plate').value,
       goodsDescription: document.getElementById('cs-goods').value,
-      shippingDate: document.getElementById('cs-date').value
+      shippingDate: document.getElementById('cs-date').value,
+      deadline: document.getElementById('cs-deadline').value
     };
     const res = await apiFetch('/api/orders', { method:'POST', body:JSON.stringify(data) });
     if(res.error) return alert(res.error);
     alert('Surat Jalan Berhasil Diterbitkan!');
+    
+    // Kirim notifikasi deadline otomatis ke driver jika driver adalah user TRUCKER
+    if (confirm('Kirim notifikasi batas waktu ke Driver sekarang?')) {
+        await apiFetch('/api/notify-deadline', { method:'POST', body:JSON.stringify({ orderNumber: data.orderNumber, driverName: data.driverName, deadline: data.deadline }) });
+    }
+
     loadData();
   }
 

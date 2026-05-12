@@ -1,5 +1,5 @@
 /**
- * ISPAS 2.0 PRO - Enhanced Real Notification & User Management
+ * ISPAS 1.0 - Integrated Smart Verification
  */
 
 const express = require('express');
@@ -64,30 +64,6 @@ if (db.users.length === 0) {
       email: 'ispas.admin@gmail.com', 
       role: 'CS_SPIL',
       customerId: null 
-    },
-    { 
-      id: 'isdr-001', 
-      username: 'isdr_user', 
-      password: bcrypt.hashSync('isdr123', 10), 
-      email: 'isdr.branch@gmail.com', 
-      role: 'ISDR',
-      customerId: null 
-    },
-    { 
-      id: 'isdo-001', 
-      username: 'isdo_user', 
-      password: bcrypt.hashSync('isdo123', 10), 
-      email: 'isdo.ops@gmail.com', 
-      role: 'ISDO',
-      customerId: null 
-    },
-    { 
-      id: 'vendor-001', 
-      username: 'vendor_user', 
-      password: bcrypt.hashSync('vendor123', 10), 
-      email: 'vendor.trucking@gmail.com', 
-      role: 'VENDOR',
-      customerId: 'cust-003' // Contoh: Terhubung ke salah satu data customer/vendor
     }
   ];
   db.users.push(...fixedUsers);
@@ -143,7 +119,7 @@ function sendRealSMS(phone, message) {
 // ─── API Routes ──────────────────────────────────────────────────────────────
 
 // Health Check
-app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '2.0.1' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
 // Login
 app.post('/api/login', async (req, res) => {
@@ -157,20 +133,11 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Config Email (CS Only)
-app.post('/api/config/email', authenticate, (req, res) => {
-  if (req.user.role !== 'CS_SPIL') return res.status(403).json({ error: 'Hanya CS yang dapat akses.' });
-  const { email, appPassword } = req.body;
-  smtpConfig.user = email; smtpConfig.pass = appPassword;
-  transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: email, pass: appPassword } });
-  res.json({ success: true, message: 'Config updated' });
-});
-
 // Create User
 app.post('/api/users', authenticate, async (req, res) => {
   if (req.user.role !== 'CS_SPIL') return res.status(403).json({ error: 'Hanya CS yang dapat akses.' });
   
-  const { username, password, email, phone, customerId, role } = req.body;
+  const { username, password, email, phone, companyName, role } = req.body;
   
   if (!username || !password || !email || !phone) {
     return res.status(400).json({ error: 'Username, Password, Email, dan Phone WAJIB diisi.' });
@@ -179,8 +146,33 @@ app.post('/api/users', authenticate, async (req, res) => {
   const assignedRole = role || 'CUSTOMER';
   const needsCustomer = (assignedRole === 'CUSTOMER' || assignedRole === 'VENDOR');
   
-  if (needsCustomer && !customerId) {
-    return res.status(400).json({ error: `Customer/Perusahaan WAJIB diisi untuk role ${assignedRole}.` });
+  if (needsCustomer && !companyName) {
+    return res.status(400).json({ error: `Nama Perusahaan WAJIB diisi untuk role ${assignedRole}.` });
+  }
+
+  let finalCustomerId = null;
+  if (needsCustomer) {
+    let existingCust = db.customers.find(c => c.name.toLowerCase() === companyName.trim().toLowerCase());
+    if (existingCust) {
+      finalCustomerId = existingCust.id;
+    } else {
+      finalCustomerId = `cust-${Date.now()}`;
+      const newCust = {
+        id: finalCustomerId,
+        name: companyName.trim(),
+        segment: 'General',
+        deliveryType: 'DIGITAL',
+        slaDays: 30,
+        minPages: 1,
+        requiresStamp: false,
+        requiresSignature: false,
+        requiredFields: [],
+        contact: email,
+        notes: 'Auto-created by CS during user registration.'
+      };
+      db.customers.push(newCust);
+      saveJSON('../server/data/customers.json', db.customers);
+    }
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -191,7 +183,7 @@ app.post('/api/users', authenticate, async (req, res) => {
     email, 
     phone, 
     role: assignedRole, 
-    customerId: needsCustomer ? customerId : null, 
+    customerId: finalCustomerId, 
     createdAt: new Date().toISOString() 
   };
   
@@ -214,12 +206,49 @@ app.get('/api/users', authenticate, (req, res) => {
   })));
 });
 
+// Notify Deadline
+app.post('/api/notify-deadline', authenticate, async (req, res) => {
+  const { orderNumber, driverName, deadline } = req.body;
+  const user = db.users.find(u => u.username === driverName);
+  
+  const message = `PENGINGAT ISPAS: Order ${orderNumber} memiliki batas waktu hingga ${new Date(deadline).toLocaleString()}. Mohon segera selesaikan pengiriman.`;
+  
+  if (user && user.phone) {
+    sendRealSMS(user.phone, message);
+  }
+  
+  if (user && user.email) {
+    await sendRealEmail(user.email, 'Pengingat Batas Waktu Pengiriman', message);
+  }
+
+  res.json({ success: true, message: 'Notifikasi terkirim' });
+});
+
 // Create Order
 app.post('/api/orders', authenticate, (req, res) => {
-  const { orderNumber, customerId, origin, destination, driverName, truckPlate, goodsDescription, shippingDate } = req.body;
-  const newOrder = { id: uuidv4(), orderNumber, customerId, origin, destination, driverName, truckPlate, goodsDescription, shippingDate, status: 'OPEN', createdAt: new Date().toISOString() };
+  const { orderNumber, customerId, origin, destination, driverName, truckPlate, goodsDescription, shippingDate, deadline } = req.body;
+  const newOrder = { 
+    id: uuidv4(), 
+    orderNumber, 
+    customerId, 
+    origin, 
+    destination, 
+    driverName, 
+    truckPlate, 
+    goodsDescription, 
+    shippingDate, 
+    deadline, 
+    status: 'OPEN', 
+    createdAt: new Date().toISOString() 
+  };
   db.orders.push(newOrder);
   res.status(201).json({ success: true, order: newOrder });
+});
+
+app.get('/api/orders', authenticate, (req, res) => {
+  if (req.user.role === 'CUSTOMER') return res.json(db.orders.filter(o => o.customerId === req.user.customerId));
+  if (req.user.role === 'TRUCKER') return res.json(db.orders.filter(o => o.driverName === req.user.username));
+  res.json(db.orders);
 });
 
 // Submit Doc
@@ -228,11 +257,6 @@ app.post('/api/documents/submit', authenticate, (req, res) => {
   const doc = { id: uuidv4(), orderId, status: 'PENDING', uploadedAt: new Date().toISOString(), submittedBy: req.user.username, fileName: documentData.fileName };
   db.documents.push(doc);
   res.status(201).json({ success: true, document: doc });
-});
-
-app.get('/api/orders', authenticate, (req, res) => {
-  if (req.user.role === 'CUSTOMER') return res.json(db.orders.filter(o => o.customerId === req.user.customerId));
-  res.json(db.orders);
 });
 
 app.get('/api/customers', (req, res) => res.json(db.customers));
