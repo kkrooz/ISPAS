@@ -486,14 +486,21 @@ app.patch('/api/orders/:id/verify', authenticate, (req, res) => {
   if (req.user.role !== 'ISDR') return res.status(403).json({ error: 'Hanya ISDR yang dapat melakukan verifikasi.' });
   
   const { id } = req.params;
-  const { errors, isCorrect } = req.body; 
+  const { errors, isCorrect, returnToVendor } = req.body; 
   const order = db.orders.find(o => o.id === id);
   if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
   
   order.verificationErrors = errors || [];
-  order.status = isCorrect ? 'VERIFIED' : 'ERROR_FOUND';
   
-  const logMsg = isCorrect ? `Order ${order.orderNumber} telah diverifikasi (BENAR).` : `Order ${order.orderNumber} ditemukan kesalahan: ${errors.join(', ')}`;
+  if (returnToVendor) {
+    order.status = 'RETURNED_TO_VENDOR';
+  } else {
+    order.status = isCorrect ? 'VERIFIED' : 'ERROR_FOUND';
+  }
+  
+  const logMsg = returnToVendor ? `Order ${order.orderNumber} dikembalikan ke Vendor.` : 
+                (isCorrect ? `Order ${order.orderNumber} telah diverifikasi (LENGKAP).` : `Order ${order.orderNumber} ditemukan kesalahan/tidak lengkap.`);
+  
   db.auditLogs.push({ id: uuidv4(), action: 'VERIFICATION', actor: req.user.username, timestamp: new Date().toISOString(), details: logMsg });
   
   res.json({ success: true, order });
@@ -507,8 +514,8 @@ app.post('/api/orders/:id/send-to-ar', authenticate, (req, res) => {
   const order = db.orders.find(o => o.id === id);
   if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
   
-  order.status = 'SENT_TO_AR';
-  db.auditLogs.push({ id: uuidv4(), action: 'SEND_TO_AR', actor: req.user.username, timestamp: new Date().toISOString(), details: `Surat Jalan ${order.orderNumber} telah dikirim ke AR.` });
+  order.status = 'SENT_TO_ACCOUNTING';
+  db.auditLogs.push({ id: uuidv4(), action: 'SEND_TO_AR', actor: req.user.username, timestamp: new Date().toISOString(), details: `Surat Jalan ${order.orderNumber} telah dikirim ke Departemen AR (Accounting).` });
   
   res.json({ success: true, order });
 });

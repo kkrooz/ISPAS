@@ -21,11 +21,11 @@
     body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
     .app { display: none; min-height: 100vh; }
     .app.active { display: flex; }
-    
+
     /* Login Styles */
     #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
     .login-card { background: var(--bg2); border: 1px solid var(--border); padding: 30px; border-radius: var(--radius); width: 100%; max-width: 400px; box-shadow: var(--shadow); }
-    
+
     .sidebar { width: 230px; background: var(--bg2); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; display: flex; flex-direction: column; }
     .sidebar-logo { padding: 20px; border-bottom: 1px solid var(--border); }
     .brand { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent2); letter-spacing: 0.08em; }
@@ -33,7 +33,7 @@
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--text-dim); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; }
     .nav-item:hover, .nav-item.active { background: rgba(59,130,246,0.1); color: var(--text); border-left-color: var(--accent); }
     .main { margin-left: 230px; flex: 1; display: flex; flex-direction: column; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }     
     .content { padding: 24px 28px; flex: 1; }
     .page { display: none; }
     .page.active { display: block; animation: fadeIn 0.3s ease; }
@@ -58,11 +58,12 @@
     .status-badge.UNLOADING { background: rgba(16,185,129,0.1); color: var(--green); }
     .status-badge.DELIVERED { background: rgba(16,185,129,0.3); color: #fff; }
     .status-badge.VERIFIED { background: rgba(16,185,129,0.1); color: var(--green); }
+    .status-badge.RETURNED_TO_VENDOR { background: rgba(239,68,68,0.1); color: var(--red); }
+    .status-badge.SENT_TO_ACCOUNTING { background: rgba(59,130,246,0.3); color: #fff; }
   </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
 <div id="login-page">
   <div class="login-card">
     <div class="brand" style="margin-bottom: 20px; font-size: 20px; text-align: center;">ISPAS 1.0</div>
@@ -103,7 +104,6 @@
     </header>
 
     <div class="content">
-      <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
         <div class="card" style="border-left: 4px solid var(--accent);">
           <h3 id="welcome-msg">Dashboard Utama</h3>
@@ -116,7 +116,6 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: CS USER MANAGEMENT ══ -->
       <div class="page" id="page-cs-users">
         <div class="card">
           <h3 style="margin-bottom:15px">👤 Manajemen Akun User</h3>
@@ -146,10 +145,10 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: CS ORDER ══ -->
       <div class="page" id="page-cs-order">
         <div class="card">
-          <h3 style="margin-bottom:15px">📝 Pembuatan Surat Jalan</h3>
+          <h3 style="margin-bottom:15px">📝 Pembuatan Order Baru</h3>
+          <p class="text-dim" style="margin-bottom:15px">Input data pengiriman untuk diverifikasi oleh ISDO.</p>
           <div class="form-grid">
             <div class="form-group"><label>Nomor Order/BL <span>*</span></label><input type="text" id="cs-order-num"></div>
             <div class="form-group"><label>Customer <span>*</span></label><select id="cs-cust-select"></select></div>
@@ -162,11 +161,10 @@
             <div class="form-group"><label>Batas Waktu (Deadline) <span>*</span></label><input type="datetime-local" id="cs-deadline"></div>
             <div class="form-group"><label>Biaya Dasar (IDR) <span>*</span></label><input type="number" id="cs-base-cost" placeholder="Contoh: 1500000"></div>
           </div>
-          <button class="btn btn-primary" style="margin-top:15px" onclick="submitOrder()">💾 Terbitkan Surat Jalan</button>
+          <button class="btn btn-primary" style="margin-top:15px" onclick="submitOrder()">💾 Simpan & Kirim ke ISDO</button>
         </div>
       </div>
 
-      <!-- ══ PAGE: TRUCKER ORDERS ══ -->
       <div class="page" id="page-trucker-orders">
         <div class="card">
           <h3>🚛 Tugas Pengiriman Saya</h3>
@@ -175,7 +173,6 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: ISDO PUBLISH ══ -->
       <div class="page" id="page-isdo-publish">
         <div class="card">
           <h3>📝 Penerbitan Surat Jalan (ISDO)</h3>
@@ -184,7 +181,6 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: ISDR VERIFICATION ══ -->
       <div class="page" id="page-isdr-verify">
         <div class="card">
           <h3>🔍 Verifikasi Surat Jalan (ISDR)</h3>
@@ -193,7 +189,6 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: WAREHOUSE ENTRY ══ -->
       <div class="page" id="page-warehouse-entry">
         <div class="card">
           <h3>📦 Monitoring Barang Masuk (Gudang)</h3>
@@ -202,7 +197,6 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: SUBMIT ══ -->
       <div class="page" id="page-submit">
         <div class="card">
           <h3>📤 Unggah Dokumen BA Balik</h3>
@@ -212,14 +206,12 @@
         </div>
       </div>
 
-      <!-- ══ PAGE: CUSTOMER TRACKING ══ -->
       <div class="page" id="page-customer-tracking">
         <div class="card">
           <h3>📦 Order Saya</h3>
           <div id="customer-order-list"></div>
         </div>
       </div>
-
     </div>
   </main>
 </div>
@@ -250,49 +242,21 @@
     const password = document.getElementById('login-password').value;
     const errorDiv = document.getElementById('login-error');
     errorDiv.innerText = '';
-
     try {
-      const res = await fetch('/api/login', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ username, password }) 
-      });
-      
-      const contentType = res.headers.get("content-type");
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('Server error response:', text);
-        errorDiv.innerText = `Error ${res.status}: ${text.substring(0, 50)}...`;
-        return;
-      }
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        if (data.success) {
-          token = data.token;
-          currentUser = data.user;
-          localStorage.setItem('ispas_token', token);
-          localStorage.setItem('ispas_user', JSON.stringify(currentUser));
-          initApp();
-        } else {
-          errorDiv.innerText = data.error || 'Username atau Password salah.';
-        }
-      } else {
-        const text = await res.text();
-        console.error('Non-JSON response:', text);
-        errorDiv.innerText = 'Server tidak memberikan respon JSON. (Check Console)';
-      }
-    } catch (err) {
-      console.error('Network/Fetch error:', err);
-      errorDiv.innerText = 'Gagal terhubung ke server. (Check Console)';
-    }
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+      if (!res.ok) { errorDiv.innerText = 'Login Gagal.'; return; }
+      const data = await res.json();
+      if (data.success) {
+        token = data.token; currentUser = data.user;
+        localStorage.setItem('ispas_token', token); localStorage.setItem('ispas_user', JSON.stringify(currentUser));
+        initApp();
+      } else { errorDiv.innerText = data.error || 'Username atau Password salah.'; }
+    } catch (err) { errorDiv.innerText = 'Gagal terhubung ke server.'; }
   }
 
   function handleLogout() {
-    token = null;
-    currentUser = null;
-    localStorage.removeItem('ispas_token');
-    localStorage.removeItem('ispas_user');
+    token = null; currentUser = null;
+    localStorage.removeItem('ispas_token'); localStorage.removeItem('ispas_user');
     document.getElementById('login-page').style.display = 'flex';
     document.getElementById('app-container').classList.remove('active');
   }
@@ -303,287 +267,130 @@
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('app-container').classList.add('active');
     document.getElementById('user-info').innerText = `${currentUser.username} (${currentUser.role})`;
-    
     const config = roleConfig[currentUser.role] || { title: 'User', sub: 'Portal', menus: [['dashboard', '📊 Stats']] };
     document.getElementById('page-title').innerText = config.title;
     document.getElementById('page-sub').innerText = config.sub;
     document.getElementById('sidebar-nav').innerHTML = config.menus.map(m => `<div class="nav-item" onclick="navigate('${m[0]}')">${m[1]}</div>`).join('');
-    
-    navigate('dashboard');
-    loadData();
+    navigate('dashboard'); loadData();
   }
 
   function navigate(id) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const targetPage = document.getElementById('page-' + id);
     if (targetPage) targetPage.classList.add('active');
-    
-    if (id === 'contact-cs') {
-      document.getElementById('page-title').innerText = 'Hubungi CS';
-      document.getElementById('page-sub').innerText = 'Kirim Email';
-    }
-  }
-
-  async function sendContactEmail() {
-    const subject = document.getElementById('contact-subject').value;
-    const message = document.getElementById('contact-message').value;
-    
-    const res = await apiFetch('/api/contact-cs', { method:'POST', body:JSON.stringify({ subject, message }) });
-    if(res.error) return alert(res.error);
-    
-    alert('Berhasil! Email Anda telah dikirim ke tim Customer Service.');
-    document.getElementById('contact-subject').value = '';
-    document.getElementById('contact-message').value = '';
-    navigate('dashboard');
   }
 
   async function loadData() {
     const stats = await apiFetch('/api/dashboard/summary');
-    const ords = await apiFetch('/api/orders');
-    
-    let totalCost = 0;
-    if (currentUser.role === 'CS_SPIL') {
-      totalCost = ords.reduce((sum, o) => sum + (o.totalCost || 0), 0);
-    }
-
+    const allOrds = await apiFetch('/api/orders');
     let statsHTML = `<div class="card"><h4>Orders</h4><h2>${stats.orders}</h2></div><div class="card"><h4>Pending</h4><h2>${stats.pending}</h2></div>`;
-    if (currentUser.role === 'CS_SPIL') {
-      statsHTML += `<div class="card" style="border-left:4px solid var(--green)"><h4>Total Logistics Cost</h4><h2>Rp ${totalCost.toLocaleString()}</h2></div>`;
-    }
     document.getElementById('dashboard-stats').innerHTML = statsHTML;
-    
     const logs = await apiFetch('/api/audit-logs');
     document.getElementById('audit-list').innerHTML = logs.map(l => `<div>[${new Date(l.timestamp).toLocaleTimeString()}] ${l.details}</div>`).join('');
 
     if (currentUser.role === 'CS_SPIL') {
       const custs = await apiFetch('/api/customers');
-      const custOptions = custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-      document.getElementById('cs-cust-select').innerHTML = custOptions;
+      document.getElementById('cs-cust-select').innerHTML = custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
       const users = await apiFetch('/api/users');
-      document.getElementById('user-list').innerHTML = users.filter(u => u.username !== 'cs_admin').map(u => {
-        const cust = custs.find(c => c.id === u.customerId);
-        return `<tr><td>${u.username}</td><td>${u.email}</td><td>${u.role}</td><td>${cust ? cust.name : '-'}</td></tr>`;
-      }).join('');
+      document.getElementById('user-list').innerHTML = users.filter(u => u.username !== 'cs_admin').map(u => `<tr><td>${u.username}</td><td>${u.email}</td><td>${u.role}</td><td>-</td></tr>`).join('');
     }
 
-    const ords = await apiFetch('/api/orders');
     if (document.getElementById('sub-order-select')) {
-      document.getElementById('sub-order-select').innerHTML = '<option value="">Pilih Order</option>' + ords.map(o => `<option value="${o.id}">${o.orderNumber}</option>`).join('');
-    }
-
-    if (currentUser.role === 'CUSTOMER') {
-      document.getElementById('customer-order-list').innerHTML = ords.map(o => `
-        <div class="card" style="background:var(--bg3); border-left: 4px solid ${o.warehouseStatus === 'WAITING_CONFIRMATION' ? 'var(--yellow)' : 'var(--green)'}">
-          <div style="display:flex; justify-content:space-between">
-            <strong>Order: ${o.orderNumber}</strong> 
-            <span class="status-badge ${o.status}">${o.status}</span>
-          </div>
-          <div style="margin-top:10px; font-size:12px">
-            <p>Route: ${o.origin} → ${o.destination}</p>
-            <p>Batas Waktu Awal: ${new Date(o.deadline).toLocaleString()}</p>
-            <p><strong>Jadwal Bongkar: ${new Date(o.unloadingSchedule).toLocaleString()}</strong></p>
-            <p>Status Gudang: <span style="color:var(--yellow)">${o.warehouseStatus}</span></p>
-            <p><strong>Total Biaya: Rp ${o.totalCost ? o.totalCost.toLocaleString() : '0'}</strong></p>
-          </div>
-          
-          ${o.warehouseStatus === 'WAITING_CONFIRMATION' ? `
-            <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px">
-              <p style="font-size:11px; color:var(--text-dim); margin-bottom:8px">Konfirmasi Kesiapan Gudang:</p>
-              <div style="display:flex; gap:10px">
-                <button class="btn btn-primary" style="background:var(--green); font-size:11px" onclick="updateSchedule('${o.id}', 'READY', '${o.deadline}')">Gudang Siap</button>
-                <button class="btn btn-ghost" style="font-size:11px" onclick="showRescheduleForm('${o.id}', '${o.deadline}')">Ubah Jadwal</button>
-              </div>
-              <div id="reschedule-form-${o.id}" style="display:none; margin-top:15px; background:var(--bg2); padding:10px; border-radius:5px; border:1px solid var(--border-bright)">
-                <label style="font-size:10px">Pilih Jadwal Baru:</label>
-                <input type="datetime-local" id="new-schedule-${o.id}" onchange="previewCost('${o.id}', '${o.deadline}', ${o.baseCost})" style="margin:5px 0">
-                <p id="cost-preview-${o.id}" style="font-size:11px; color:var(--orange); margin-bottom:10px"></p>
-                <button class="btn btn-primary" style="width:100%" onclick="submitNewSchedule('${o.id}')">Konfirmasi Jadwal & Biaya</button>
-              </div>
-            </div>
-          ` : ''}
-        </div>
-      `).join('');
-    }
-
-    if (currentUser.role === 'TRUCKER') {
-...
-      `).join('');
+      document.getElementById('sub-order-select').innerHTML = '<option value="">Pilih Order</option>' + allOrds.map(o => `<option value="${o.id}">${o.orderNumber}</option>`).join('');
     }
 
     if (currentUser.role === 'ISDO') {
-      document.getElementById('isdo-order-list').innerHTML = ords.filter(o => o.status === 'WAITING_ISDO').map(o => `
+      document.getElementById('isdo-order-list').innerHTML = allOrds.filter(o => o.status === 'WAITING_ISDO').map(o => `
         <div class="card" style="background:var(--bg3); border-left: 4px solid var(--yellow)">
-          <div style="display:flex; justify-content:space-between">
-            <strong>Order: ${o.orderNumber}</strong> 
-            <span class="status-badge WAITING">${o.status}</span>
-          </div>
+          <strong>Order: ${o.orderNumber}</strong>
           <p style="font-size:12px; margin-top:10px">Route: ${o.origin} → ${o.destination}</p>
-          <p style="font-size:12px">Driver: ${o.driverName} (${o.truckPlate})</p>
           <button class="btn btn-primary" style="margin-top:10px; width:100%" onclick="publishOrder('${o.id}')">🚀 Terbitkan Surat Jalan</button>
         </div>
       `).join('') || '<p class="text-dim">Tidak ada order menunggu.</p>';
     }
 
     if (currentUser.role === 'ISDR') {
-...
+      document.getElementById('isdr-order-list').innerHTML = allOrds.filter(o => ['DELIVERED', 'ERROR_FOUND', 'VERIFIED', 'SENT_TO_ACCOUNTING', 'RETURNED_TO_VENDOR'].includes(o.status)).map(o => `
+        <div class="card" style="background:var(--bg3); border-left: 4px solid var(--accent)">
+          <div style="display:flex; justify-content:space-between">
+            <strong>Order: ${o.orderNumber}</strong>
+            <span class="status-badge ${o.status}">${o.status}</span>
+          </div>
+          ${o.status === 'DELIVERED' || o.status === 'ERROR_FOUND' || o.status === 'RETURNED_TO_VENDOR' ? `
+            <div style="background:var(--bg2); padding:15px; border-radius:5px; border:1px solid var(--border); margin-top:10px">
+              <p style="font-size:11px; color:var(--text-dim); margin-bottom:10px; font-weight:700">CHECKLIST VERIFIKASI:</p>
+              <div style="display:flex; flex-direction:column; gap:8px">
+                <label style="text-transform:none; font-family:var(--sans); color:var(--text); font-size:12px; display:flex; align-items:center; gap:8px"><input type="checkbox" class="check-${o.id}" value="SIGNATURE" style="width:auto"> Tanda Tangan Penerima Lengkap</label>
+                <label style="text-transform:none; font-family:var(--sans); color:var(--text); font-size:12px; display:flex; align-items:center; gap:8px"><input type="checkbox" class="check-${o.id}" value="STAMP" style="width:auto"> Stempel Perusahaan/Gudang Ada</label>
+                <label style="text-transform:none; font-family:var(--sans); color:var(--text); font-size:12px; display:flex; align-items:center; gap:8px"><input type="checkbox" class="check-${o.id}" value="WEIGHT" style="width:auto"> Beban Muatan Sesuai</label>
+                <label style="text-transform:none; font-family:var(--sans); color:var(--text); font-size:12px; display:flex; align-items:center; gap:8px"><input type="checkbox" class="check-${o.id}" value="DOCS" style="width:auto"> Dokumen BA Balik Lengkap</label>
+              </div>
+              <div style="margin-top:15px; display:flex; gap:10px">
+                <button class="btn btn-primary" style="background:var(--green); flex:1" onclick="verifyOrderDetailed('${o.id}', true)">✅ Verifikasi Sesuai</button>
+                <button class="btn btn-primary" style="background:var(--red); flex:1" onclick="verifyOrderDetailed('${o.id}', false)">❌ Kembalikan ke Vendor</button>
+              </div>
+            </div>
+          ` : ''}
+          ${o.status === 'VERIFIED' ? `<button class="btn btn-primary" style="margin-top:10px; width:100%" onclick="sendToAR('${o.id}')">💰 Kirim ke Accounting (AR)</button>` : ''}
+        </div>
       `).join('') || '<p class="text-dim">Tidak ada order untuk diverifikasi.</p>';
     }
 
-    if (currentUser.role === 'WAREHOUSE') {
-      document.getElementById('warehouse-order-list').innerHTML = ords.map(o => `
+    if (currentUser.role === 'TRUCKER') {
+      document.getElementById('trucker-order-list').innerHTML = allOrds.map(o => `
         <div class="card" style="background:var(--bg3); border-left: 4px solid var(--accent)">
-          <div style="display:flex; justify-content:space-between">
-            <strong>Order: ${o.orderNumber}</strong> 
-            <span class="status-badge ${o.status}">${o.status}</span>
-          </div>
-          <div style="margin-top:10px; font-size:12px">
-            <p><strong>📦 Barang: ${o.goodsDescription}</strong></p>
-            <p>🚛 Truk: ${o.truckPlate} (${o.driverName})</p>
-            <p>📍 Tujuan: ${o.destination}</p>
-            <p>📅 Estimasi Bongkar: ${new Date(o.unloadingSchedule).toLocaleString()}</p>
-          </div>
-          <div style="margin-top:10px; font-size:11px; color:var(--text-dim)">
-            Status Gudang: <span style="color:var(--yellow)">${o.warehouseStatus}</span>
+          <strong>Order: ${o.orderNumber}</strong>
+          <div style="margin-top:10px; display:flex; gap:10px">
+            <button class="btn btn-primary" style="flex:1" onclick="updateOrderStatus('${o.id}', 'IN_TRANSIT')">🚚 Jalan</button>
+            <button class="btn btn-primary" style="background:var(--green); flex:1" onclick="updateOrderStatus('${o.id}', 'DELIVERED')">✅ Sampai</button>
           </div>
         </div>
-      `).join('') || '<p class="text-dim">Tidak ada data barang masuk.</p>';
+      `).join('');
     }
-
-    if (currentUser.role === 'CS_SPIL') {
-       // Tambahan UI untuk CS di daftar order (opsional, tapi bagus untuk kirim notif)
-       // Untuk kesederhanaan, saya tambahkan tombol di log atau tempat lain jika perlu.
-    }
-  }
-
-  function toggleCustomerSelect() {
-    const role = document.getElementById('user-role').value;
-    // Tampilkan pilihan perusahaan jika role adalah CUSTOMER atau VENDOR
-    document.getElementById('cust-select-group').style.display = (role === 'CUSTOMER' || role === 'VENDOR') ? 'block' : 'none';
-  }
-
-  async function createUserAccount() {
-    const data = { 
-      username: document.getElementById('user-name').value, 
-      password: document.getElementById('user-pass').value, 
-      email: document.getElementById('user-email').value, 
-      phone: document.getElementById('user-phone').value,
-      role: document.getElementById('user-role').value,
-      companyName: document.getElementById('user-company-name').value 
-    };
-    const res = await apiFetch('/api/users', { method:'POST', body:JSON.stringify(data) });
-    if(res.error) return alert(res.error);
-    alert('Akun berhasil dibuat! Notifikasi dikirim.');
-    loadData();
   }
 
   async function submitOrder() {
-    const data = { 
-      orderNumber: document.getElementById('cs-order-num').value, 
-      customerId: document.getElementById('cs-cust-select').value, 
-      origin: document.getElementById('cs-origin').value, 
-      destination: document.getElementById('cs-dest').value,
-      driverName: document.getElementById('cs-driver').value,
-      truckPlate: document.getElementById('cs-plate').value,
-      goodsDescription: document.getElementById('cs-goods').value,
-      shippingDate: document.getElementById('cs-date').value,
-      deadline: document.getElementById('cs-deadline').value,
-      baseCost: document.getElementById('cs-base-cost').value
-    };
+    const data = { orderNumber: document.getElementById('cs-order-num').value, customerId: document.getElementById('cs-cust-select').value, origin: document.getElementById('cs-origin').value, destination: document.getElementById('cs-dest').value, driverName: document.getElementById('cs-driver').value, truckPlate: document.getElementById('cs-plate').value, goodsDescription: document.getElementById('cs-goods').value, shippingDate: document.getElementById('cs-date').value, deadline: document.getElementById('cs-deadline').value, baseCost: document.getElementById('cs-base-cost').value };
     const res = await apiFetch('/api/orders', { method:'POST', body:JSON.stringify(data) });
     if(res.error) return alert(res.error);
-    alert('Surat Jalan Berhasil Diterbitkan!');
-    
-    // Kirim notifikasi deadline otomatis ke driver jika driver adalah user TRUCKER
-    if (confirm('Kirim notifikasi batas waktu ke Driver sekarang?')) {
-        await apiFetch('/api/notify-deadline', { method:'POST', body:JSON.stringify({ orderNumber: data.orderNumber, driverName: data.driverName, deadline: data.deadline }) });
-    }
-
-    loadData();
-  }
-
-  // --- NEW FUNCTIONS FOR WAREHOUSE SCHEDULING ---
-  function showRescheduleForm(id, deadline) {
-    document.getElementById(`reschedule-form-${id}`).style.display = 'block';
-    document.getElementById(`new-schedule-${id}`).value = deadline;
-  }
-
-  function previewCost(id, deadline, baseCost) {
-    const newSched = new Date(document.getElementById(`new-schedule-${id}`).value);
-    const oldDead = new Date(deadline);
-    const hourlyRate = 50000;
-    let extra = 0;
-
-    if (newSched > oldDead) {
-      const diffMs = newSched - oldDead;
-      const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-      extra = diffHours * hourlyRate;
-    }
-
-    document.getElementById(`cost-preview-${id}`).innerText = extra > 0 ? 
-      `Biaya Tambahan: Rp ${extra.toLocaleString()} (Total: Rp ${(parseFloat(baseCost) + extra).toLocaleString()})` : 
-      `Tidak ada biaya tambahan.`;
-  }
-
-  async function updateSchedule(id, status, schedule) {
-    const res = await apiFetch(`/api/orders/${id}/schedule`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ warehouseStatus: status, unloadingSchedule: schedule }) 
-    });
-    if(res.error) return alert(res.error);
-    alert('Jadwal & Status Gudang Berhasil Diperbarui!');
-    loadData();
-  }
-
-  async function submitNewSchedule(id) {
-    const newSched = document.getElementById(`new-schedule-${id}`).value;
-    await updateSchedule(id, 'RESCHEDULED', newSched);
+    alert('Order Berhasil Dibuat dan Dikirim ke ISDO!'); loadData();
   }
 
   async function publishOrder(id) {
     const res = await apiFetch(`/api/orders/${id}/publish`, { method: 'PATCH' });
     if(res.error) return alert(res.error);
-    alert('Surat Jalan Berhasil Diterbitkan!');
-    loadData();
+    alert('Surat Jalan Berhasil Diterbitkan!'); loadData();
   }
 
-  async function verifyOrder(id) {
-    const errorChecks = Array.from(document.querySelectorAll(`.err-${id}:checked`)).map(cb => cb.value);
-    const isCorrect = errorChecks.length === 0;
-    
-    const res = await apiFetch(`/api/orders/${id}/verify`, { 
-      method: 'PATCH', 
-      body: JSON.stringify({ errors: errorChecks, isCorrect }) 
-    });
+  async function verifyOrderDetailed(id, isCorrect) {
+    const checks = Array.from(document.querySelectorAll(`.check-${id}:checked`)).map(cb => cb.value);
+    const res = await apiFetch(`/api/orders/${id}/verify`, { method: 'PATCH', body: JSON.stringify({ errors: checks, isCorrect, returnToVendor: !isCorrect }) });
     if(res.error) return alert(res.error);
-    alert(isCorrect ? 'Verifikasi Selesai (Semua Benar)!' : 'Cek Berhasil Disimpan dengan Catatan Kesalahan.');
-    loadData();
+    alert(isCorrect ? 'Verifikasi Selesai!' : 'Order dikembalikan ke Vendor.'); loadData();
   }
 
   async function sendToAR(id) {
     const res = await apiFetch(`/api/orders/${id}/send-to-ar`, { method: 'POST' });
     if(res.error) return alert(res.error);
-    alert('Surat Jalan Berhasil Dikirim ke AR!');
-    loadData();
+    alert('Surat Jalan Berhasil Dikirim ke Departemen AR (Accounting)!'); loadData();
   }
 
   async function updateOrderStatus(id, status) {
-    const res = await apiFetch(`/api/orders/${id}/status`, { 
-      method: 'PATCH', 
-      body: JSON.stringify({ status }) 
-    });
+    const res = await apiFetch(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
     if(res.error) return alert(res.error);
-    alert(`Status berhasil diubah menjadi ${status}`);
-    loadData();
+    alert(`Status berhasil diubah menjadi ${status}`); loadData();
   }
 
-  async function submitDocument() {
-    const orderId = document.getElementById('sub-order-select').value;
-    const file = document.getElementById('sub-file').files[0];
-    const data = { orderId, documentData: { fileName: file ? file.name : '' } };
-    const res = await apiFetch('/api/documents/submit', { method:'POST', body:JSON.stringify(data) });
+  async function createUserAccount() {
+    const data = { username: document.getElementById('user-name').value, password: document.getElementById('user-pass').value, email: document.getElementById('user-email').value, phone: document.getElementById('user-phone').value, role: document.getElementById('user-role').value, companyName: document.getElementById('user-company-name').value };
+    const res = await apiFetch('/api/users', { method:'POST', body:JSON.stringify(data) });
     if(res.error) return alert(res.error);
-    alert('Dokumen Terkirim!');
-    loadData();
+    alert('Akun berhasil dibuat!'); loadData();
+  }
+
+  function toggleCustomerSelect() {
+    const role = document.getElementById('user-role').value;
+    document.getElementById('cust-select-group').style.display = (role === 'CUSTOMER' || role === 'VENDOR') ? 'block' : 'none';
   }
 
   if (token) initApp();
