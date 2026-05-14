@@ -55,7 +55,7 @@ const db = {
 };
 
 // Ensure at least one admin and fixed roles exist
-if (db.users.length === 0) {
+if (db.users.length <= 1) {
   const fixedUsers = [
     { 
       id: 'admin-001', 
@@ -64,9 +64,38 @@ if (db.users.length === 0) {
       email: 'ispas.admin@gmail.com', 
       role: 'CS_SPIL',
       customerId: null 
+    },
+    { 
+      id: 'isdo-001', 
+      username: 'isdo_pusat', 
+      password: bcrypt.hashSync('isdo123', 10), 
+      email: 'isdo.pusat@gmail.com', 
+      role: 'ISDO',
+      customerId: null 
+    },
+    { 
+      id: 'isdr-001', 
+      username: 'isdr_cabang', 
+      password: bcrypt.hashSync('isdr123', 10), 
+      email: 'isdr.cabang@gmail.com', 
+      role: 'ISDR',
+      customerId: null 
+    },
+    { 
+      id: 'wh-001', 
+      username: 'gudang_vendor', 
+      password: bcrypt.hashSync('gudang123', 10), 
+      email: 'vendor.gudang@gmail.com', 
+      role: 'WAREHOUSE',
+      customerId: null 
     }
   ];
-  db.users.push(...fixedUsers);
+  // Filter out existing to avoid duplicates if partially filled
+  fixedUsers.forEach(fu => {
+    if (!db.users.find(u => u.username === fu.username)) {
+      db.users.push(fu);
+    }
+  });
   saveJSON('../server/data/users.json', db.users);
 }
 
@@ -259,9 +288,89 @@ app.post('/api/notify-deadline', authenticate, async (req, res) => {
   res.json({ success: true, message: 'Notifikasi terkirim' });
 });
 
-// Create Order
+// ─── LOGISTICS COST ENGINE ──────────────────────────────────────────────────
+/**
+ * Menghitung estimasi biaya logistik berdasarkan komponen standar industri PT SPIL.
+ * Rujukan: KOMPETITOR_LOGISTIK_DATA.md
+ */
+function calculateLogisticsCost(params) {
+  const {
+    distance = 0,         // Jarak dalam KM
+    isRentContainer = false,
+    containerType = 'DRY', // DRY, REEFER, FLAT_RACK
+    containerSize = '20',  // 20, 40
+    loadWeight = 0,        // Berat muatan dalam Ton
+    hasTrailer = true,     // Menggunakan gandengan
+    isReschedule = false,
+    delayHours = 0
+  } = params;
+
+  // 1. Biaya Sewa Container (Harian / Per Trip)
+  let rentCost = isRentContainer ? (containerSize === '20' ? 300000 : 500000) : 0;
+
+  // 2. Biaya Bensin (Solar B40)
+  // Rata-rata 1L:3KM, Harga Rp 29.000/L
+  const fuelConsumption = distance / 3;
+  const fuelCost = fuelConsumption * 29000;
+
+  // 3. Biaya Uang Saku Sopir (Berdasarkan Jarak & Beban)
+  // Base Rp 300.000 + Insentif KM + Insentif Beban
+  const driverPocketMoney = 300000 + (distance * 500) + (loadWeight * 5000);
+
+  // 4. Biaya Beban Muatan (Surcharge per Ton > 15 Ton)
+  const weightSurcharge = loadWeight > 15 ? (loadWeight - 15) * 20000 : 0;
+
+  // 5. Biaya Dimensi (Panjang Container & Tipe)
+  let dimensionSurcharge = containerSize === '40' ? 200000 : 0;
+  if (containerType === 'REEFER') dimensionSurcharge += 500000; // Biaya listrik/pendingin
+  if (containerType === 'FLAT_RACK') dimensionSurcharge += 300000; // Penanganan khusus
+
+  // 6. Biaya Gandengan (Trailer)
+  const trailerCost = hasTrailer ? 150000 : 0;
+
+  // 7. Biaya Reschedule (Jika ada)
+  let rescheduleCost = 0;
+  if (isReschedule) {
+    // Penalti dasar + biaya tunggu per jam
+    rescheduleCost = 200000 + (delayHours * 50000);
+  }
+
+  const totalBaseCost = rentCost + fuelCost + driverPocketMoney + weightSurcharge + dimensionSurcharge + trailerCost;
+  
+  return {
+    baseCost: Math.round(totalBaseCost),
+    rescheduleCost: Math.round(rescheduleCost),
+    totalCost: Math.round(totalBaseCost + rescheduleCost),
+    breakdown: {
+      fuel: Math.round(fuelCost),
+      driver: Math.round(driverPocketMoney),
+      weight: Math.round(weightSurcharge),
+      rent: rentCost,
+      trailer: trailerCost
+    }
+  };
+}
+
+// Create Order (CS or ISDO)
 app.post('/api/orders', authenticate, (req, res) => {
-  const { orderNumber, customerId, origin, destination, driverName, truckPlate, goodsDescription, shippingDate, deadline, baseCost } = req.body;
+  const { 
+    orderNumber, customerId, origin, destination, driverName, truckPlate, 
+    goodsDescription, shippingDate, deadline, distance, loadWeight, 
+    containerSize, containerType, isRentContainer, hasTrailer 
+  } = req.body;
+  
+  // Calculate Initial Cost using our Engine
+  const costResults = calculateLogisticsCost({
+    distance: parseFloat(distance) || 0,
+    loadWeight: parseFloat(loadWeight) || 0,
+    containerSize: containerSize || '20',
+    containerType: containerType || 'DRY',
+    isRentContainer: isRentContainer === true,
+    hasTrailer: hasTrailer !== false
+  });
+
+  const initialStatus = req.user.role === 'CS_SPIL' ? 'WAITING_ISDO' : 'OPEN';
+  
   const newOrder = { 
     id: uuidv4(), 
     orderNumber, 
@@ -273,16 +382,35 @@ app.post('/api/orders', authenticate, (req, res) => {
     goodsDescription, 
     shippingDate, 
     deadline, 
-    status: 'OPEN', 
+    distance: parseFloat(distance) || 0,
+    loadWeight: parseFloat(loadWeight) || 0,
+    containerSize: containerSize || '20',
+    containerType: containerType || 'DRY',
+    status: initialStatus, 
     warehouseStatus: 'WAITING_CONFIRMATION',
     unloadingSchedule: deadline,
-    baseCost: parseFloat(baseCost) || 0,
+    baseCost: costResults.baseCost,
     dynamicCost: 0,
-    totalCost: parseFloat(baseCost) || 0,
+    totalCost: costResults.totalCost,
+    costBreakdown: costResults.breakdown,
+    verificationErrors: [],
     createdAt: new Date().toISOString() 
   };
   db.orders.push(newOrder);
   res.status(201).json({ success: true, order: newOrder });
+});
+
+// Finalize Order (ISDO only)
+app.patch('/api/orders/:id/publish', authenticate, (req, res) => {
+  if (req.user.role !== 'ISDO') return res.status(403).json({ error: 'Hanya ISDO yang dapat menerbitkan surat jalan.' });
+  
+  const { id } = req.params;
+  const order = db.orders.find(o => o.id === id);
+  if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
+  
+  order.status = 'OPEN';
+  db.auditLogs.push({ id: uuidv4(), action: 'PUBLISH_ORDER', actor: req.user.username, timestamp: new Date().toISOString(), details: `ISDO menerbitkan Surat Jalan ${order.orderNumber}` });
+  res.json({ success: true, order });
 });
 
 // Update Warehouse Schedule & Cost
@@ -299,14 +427,18 @@ app.put('/api/orders/:id/schedule', authenticate, (req, res) => {
   const oldDeadline = new Date(order.deadline);
   const newSchedule = new Date(unloadingSchedule);
   
-  // Logika Perhitungan Biaya: Rp 50.000 per jam keterlambatan
-  const hourlyRate = 50000;
   let dynamicCost = 0;
 
   if (newSchedule > oldDeadline) {
     const diffMs = newSchedule - oldDeadline;
     const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-    dynamicCost = diffHours * hourlyRate;
+    
+    // Recalculate using Engine for Consistency
+    const rescheduleResults = calculateLogisticsCost({
+      isReschedule: true,
+      delayHours: diffHours
+    });
+    dynamicCost = rescheduleResults.rescheduleCost;
   }
 
   order.warehouseStatus = warehouseStatus;
@@ -317,10 +449,68 @@ app.put('/api/orders/:id/schedule', authenticate, (req, res) => {
   res.json({ success: true, order });
 });
 
+// Update Order Status (for Trucker or CS)
+app.patch('/api/orders/:id/status', authenticate, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const order = db.orders.find(o => o.id === id);
+
+  if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
+  
+  const oldStatus = order.status;
+  order.status = status;
+  
+  const logMsg = `Status Order ${order.orderNumber} diubah dari ${oldStatus} ke ${status} oleh ${req.user.username}`;
+  db.auditLogs.push({ 
+    id: uuidv4(), 
+    action: 'STATUS_UPDATE', 
+    actor: req.user.username, 
+    timestamp: new Date().toISOString(), 
+    details: logMsg 
+  });
+
+  res.json({ success: true, order });
+});
+
 app.get('/api/orders', authenticate, (req, res) => {
   if (req.user.role === 'CUSTOMER') return res.json(db.orders.filter(o => o.customerId === req.user.customerId));
   if (req.user.role === 'TRUCKER') return res.json(db.orders.filter(o => o.driverName === req.user.username));
+  if (req.user.role === 'ISDO') return res.json(db.orders.filter(o => o.status === 'WAITING_ISDO' || o.status === 'OPEN'));
+  if (req.user.role === 'ISDR') return res.json(db.orders.filter(o => ['DELIVERED', 'ERROR_FOUND', 'VERIFIED', 'SENT_TO_AR'].includes(o.status)));
+  if (req.user.role === 'WAREHOUSE' || req.user.role === 'VENDOR') return res.json(db.orders); // Vendors/Warehouse see overall inbound logistics
   res.json(db.orders);
+});
+
+// Verification logic for ISDR
+app.patch('/api/orders/:id/verify', authenticate, (req, res) => {
+  if (req.user.role !== 'ISDR') return res.status(403).json({ error: 'Hanya ISDR yang dapat melakukan verifikasi.' });
+  
+  const { id } = req.params;
+  const { errors, isCorrect } = req.body; 
+  const order = db.orders.find(o => o.id === id);
+  if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
+  
+  order.verificationErrors = errors || [];
+  order.status = isCorrect ? 'VERIFIED' : 'ERROR_FOUND';
+  
+  const logMsg = isCorrect ? `Order ${order.orderNumber} telah diverifikasi (BENAR).` : `Order ${order.orderNumber} ditemukan kesalahan: ${errors.join(', ')}`;
+  db.auditLogs.push({ id: uuidv4(), action: 'VERIFICATION', actor: req.user.username, timestamp: new Date().toISOString(), details: logMsg });
+  
+  res.json({ success: true, order });
+});
+
+// Send to AR (ISDR only)
+app.post('/api/orders/:id/send-to-ar', authenticate, (req, res) => {
+  if (req.user.role !== 'ISDR') return res.status(403).json({ error: 'Hanya ISDR yang dapat mengirim ke AR.' });
+  
+  const { id } = req.params;
+  const order = db.orders.find(o => o.id === id);
+  if (!order) return res.status(404).json({ error: 'Order tidak ditemukan' });
+  
+  order.status = 'SENT_TO_AR';
+  db.auditLogs.push({ id: uuidv4(), action: 'SEND_TO_AR', actor: req.user.username, timestamp: new Date().toISOString(), details: `Surat Jalan ${order.orderNumber} telah dikirim ke AR.` });
+  
+  res.json({ success: true, order });
 });
 
 // Submit Doc

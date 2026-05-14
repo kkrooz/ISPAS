@@ -1,13 +1,21 @@
+# Secrets & Credentials
 Pass GitHub.txt
-Screenshot 2026-05-06 104237.png
-Code/.git/
-Code/node_modules/
-Code/.env
-Code/.vercel
-Code/package-lock.json
-**/node_modules/
-**/.env
-node_modules
+.env
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build & System Files
+.vercel/
 .DS_Store
-.vercel
 *.log
+npm-debug.log*
+
+# Documentation (Private Assets)
+docs/
+*.pdf
+
+# Legacy Cleanup (Directories already removed)
+# Code/
+# assets_documentation/

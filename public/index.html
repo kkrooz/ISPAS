@@ -53,6 +53,10 @@
     td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
     .status-badge { padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
     .status-badge.OPEN { background: rgba(59,130,246,0.1); color: var(--accent); }
+    .status-badge.LOADING { background: rgba(245,158,11,0.1); color: var(--yellow); }
+    .status-badge.IN_TRANSIT { background: rgba(249,115,22,0.1); color: var(--orange); }
+    .status-badge.UNLOADING { background: rgba(16,185,129,0.1); color: var(--green); }
+    .status-badge.DELIVERED { background: rgba(16,185,129,0.3); color: #fff; }
     .status-badge.VERIFIED { background: rgba(16,185,129,0.1); color: var(--green); }
   </style>
 </head>
@@ -171,6 +175,33 @@
         </div>
       </div>
 
+      <!-- ══ PAGE: ISDO PUBLISH ══ -->
+      <div class="page" id="page-isdo-publish">
+        <div class="card">
+          <h3>📝 Penerbitan Surat Jalan (ISDO)</h3>
+          <p class="text-dim">Daftar order masuk dari CS yang menunggu penerbitan.</p>
+          <div id="isdo-order-list" style="margin-top:15px"></div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: ISDR VERIFICATION ══ -->
+      <div class="page" id="page-isdr-verify">
+        <div class="card">
+          <h3>🔍 Verifikasi Surat Jalan (ISDR)</h3>
+          <p class="text-dim">Pengecekan komponen Surat Jalan sebelum dikirim ke AR.</p>
+          <div id="isdr-order-list" style="margin-top:15px"></div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: WAREHOUSE ENTRY ══ -->
+      <div class="page" id="page-warehouse-entry">
+        <div class="card">
+          <h3>📦 Monitoring Barang Masuk (Gudang)</h3>
+          <p class="text-dim">Informasi pengiriman yang menuju gudang Anda.</p>
+          <div id="warehouse-order-list" style="margin-top:15px"></div>
+        </div>
+      </div>
+
       <!-- ══ PAGE: SUBMIT ══ -->
       <div class="page" id="page-submit">
         <div class="card">
@@ -198,11 +229,12 @@
   let token = localStorage.getItem('ispas_token');
 
   const roleConfig = {
-    CS_SPIL: { title: 'CS SPIL', sub: 'Manajemen', menus: [['dashboard', '📊 Stats'], ['cs-users', '👤 Users'], ['cs-order', '📝 Orders']] },
+    CS_SPIL: { title: 'CS SPIL', sub: 'Input Order', menus: [['dashboard', '📊 Stats'], ['cs-users', '👤 Users'], ['cs-order', '📥 Order Entry']] },
+    ISDO: { title: 'ISDO Pusat', sub: 'Penerbitan', menus: [['dashboard', '📊 Stats'], ['isdo-publish', '📝 Publish SJ']] },
     CUSTOMER: { title: 'Customer', sub: 'Tracking', menus: [['dashboard', '📊 Stats'], ['customer-tracking', '📦 My Orders'], ['submit', '📤 Submit']] },
     TRUCKER: { title: 'Trucker', sub: 'Driver Portal', menus: [['dashboard', '📊 Stats'], ['trucker-orders', '🚛 My Deliveries']] },
-    ISDR: { title: 'ISDR Cabang', sub: 'Verifikasi', menus: [['dashboard', '📊 Stats'], ['submit', '📥 Verifikasi']] },
-    ISDO: { title: 'ISDO Ops', sub: 'Monitoring', menus: [['dashboard', '📊 Stats'], ['cs-order', '📝 Monitoring']] },
+    ISDR: { title: 'ISDR Cabang', sub: 'Verifikasi', menus: [['dashboard', '📊 Stats'], ['isdr-verify', '🔍 Verifikasi SJ']] },
+    WAREHOUSE: { title: 'Warehouse Ops', sub: 'Gudang', menus: [['dashboard', '📊 Stats'], ['warehouse-entry', '📦 Barang Masuk']] },
     VENDOR: { title: 'Vendor Trucking', sub: 'Operasional', menus: [['dashboard', '📊 Stats'], ['submit', '📤 Update Status']] }
   };
 
@@ -307,7 +339,18 @@
 
   async function loadData() {
     const stats = await apiFetch('/api/dashboard/summary');
-    document.getElementById('dashboard-stats').innerHTML = `<div class="card"><h4>Orders</h4><h2>${stats.orders}</h2></div><div class="card"><h4>Pending</h4><h2>${stats.pending}</h2></div>`;
+    const ords = await apiFetch('/api/orders');
+    
+    let totalCost = 0;
+    if (currentUser.role === 'CS_SPIL') {
+      totalCost = ords.reduce((sum, o) => sum + (o.totalCost || 0), 0);
+    }
+
+    let statsHTML = `<div class="card"><h4>Orders</h4><h2>${stats.orders}</h2></div><div class="card"><h4>Pending</h4><h2>${stats.pending}</h2></div>`;
+    if (currentUser.role === 'CS_SPIL') {
+      statsHTML += `<div class="card" style="border-left:4px solid var(--green)"><h4>Total Logistics Cost</h4><h2>Rp ${totalCost.toLocaleString()}</h2></div>`;
+    }
+    document.getElementById('dashboard-stats').innerHTML = statsHTML;
     
     const logs = await apiFetch('/api/audit-logs');
     document.getElementById('audit-list').innerHTML = logs.map(l => `<div>[${new Date(l.timestamp).toLocaleTimeString()}] ${l.details}</div>`).join('');
@@ -363,15 +406,47 @@
     }
 
     if (currentUser.role === 'TRUCKER') {
-      document.getElementById('trucker-order-list').innerHTML = ords.map(o => `
-        <div class="card" style="background:var(--bg3); border-left: 4px solid ${new Date(o.unloadingSchedule) < new Date() ? 'var(--red)' : 'var(--orange)'}">
-          <div style="display:flex; justify-content:space-between"><strong>Order: ${o.orderNumber}</strong> <span class="status-badge ${o.status}">${o.status}</span></div>
-          <p style="font-size:12px; margin-top:5px;"><strong>Jadwal Bongkar: ${new Date(o.unloadingSchedule).toLocaleString()}</strong></p>
-          <p style="font-size:12px; color:var(--text-dim)">Status Gudang: ${o.warehouseStatus}</p>
-          <p style="font-size:12px">Route: ${o.origin} → ${o.destination} | Barang: ${o.goodsDescription}</p>
-          <div style="margin-top:10px; font-size:11px; color:var(--text-muted)">ID Driver: ${o.driverName}</div>
-        </div>
+...
       `).join('');
+    }
+
+    if (currentUser.role === 'ISDO') {
+      document.getElementById('isdo-order-list').innerHTML = ords.filter(o => o.status === 'WAITING_ISDO').map(o => `
+        <div class="card" style="background:var(--bg3); border-left: 4px solid var(--yellow)">
+          <div style="display:flex; justify-content:space-between">
+            <strong>Order: ${o.orderNumber}</strong> 
+            <span class="status-badge WAITING">${o.status}</span>
+          </div>
+          <p style="font-size:12px; margin-top:10px">Route: ${o.origin} → ${o.destination}</p>
+          <p style="font-size:12px">Driver: ${o.driverName} (${o.truckPlate})</p>
+          <button class="btn btn-primary" style="margin-top:10px; width:100%" onclick="publishOrder('${o.id}')">🚀 Terbitkan Surat Jalan</button>
+        </div>
+      `).join('') || '<p class="text-dim">Tidak ada order menunggu.</p>';
+    }
+
+    if (currentUser.role === 'ISDR') {
+...
+      `).join('') || '<p class="text-dim">Tidak ada order untuk diverifikasi.</p>';
+    }
+
+    if (currentUser.role === 'WAREHOUSE') {
+      document.getElementById('warehouse-order-list').innerHTML = ords.map(o => `
+        <div class="card" style="background:var(--bg3); border-left: 4px solid var(--accent)">
+          <div style="display:flex; justify-content:space-between">
+            <strong>Order: ${o.orderNumber}</strong> 
+            <span class="status-badge ${o.status}">${o.status}</span>
+          </div>
+          <div style="margin-top:10px; font-size:12px">
+            <p><strong>📦 Barang: ${o.goodsDescription}</strong></p>
+            <p>🚛 Truk: ${o.truckPlate} (${o.driverName})</p>
+            <p>📍 Tujuan: ${o.destination}</p>
+            <p>📅 Estimasi Bongkar: ${new Date(o.unloadingSchedule).toLocaleString()}</p>
+          </div>
+          <div style="margin-top:10px; font-size:11px; color:var(--text-dim)">
+            Status Gudang: <span style="color:var(--yellow)">${o.warehouseStatus}</span>
+          </div>
+        </div>
+      `).join('') || '<p class="text-dim">Tidak ada data barang masuk.</p>';
     }
 
     if (currentUser.role === 'CS_SPIL') {
@@ -462,6 +537,43 @@
   async function submitNewSchedule(id) {
     const newSched = document.getElementById(`new-schedule-${id}`).value;
     await updateSchedule(id, 'RESCHEDULED', newSched);
+  }
+
+  async function publishOrder(id) {
+    const res = await apiFetch(`/api/orders/${id}/publish`, { method: 'PATCH' });
+    if(res.error) return alert(res.error);
+    alert('Surat Jalan Berhasil Diterbitkan!');
+    loadData();
+  }
+
+  async function verifyOrder(id) {
+    const errorChecks = Array.from(document.querySelectorAll(`.err-${id}:checked`)).map(cb => cb.value);
+    const isCorrect = errorChecks.length === 0;
+    
+    const res = await apiFetch(`/api/orders/${id}/verify`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ errors: errorChecks, isCorrect }) 
+    });
+    if(res.error) return alert(res.error);
+    alert(isCorrect ? 'Verifikasi Selesai (Semua Benar)!' : 'Cek Berhasil Disimpan dengan Catatan Kesalahan.');
+    loadData();
+  }
+
+  async function sendToAR(id) {
+    const res = await apiFetch(`/api/orders/${id}/send-to-ar`, { method: 'POST' });
+    if(res.error) return alert(res.error);
+    alert('Surat Jalan Berhasil Dikirim ke AR!');
+    loadData();
+  }
+
+  async function updateOrderStatus(id, status) {
+    const res = await apiFetch(`/api/orders/${id}/status`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ status }) 
+    });
+    if(res.error) return alert(res.error);
+    alert(`Status berhasil diubah menjadi ${status}`);
+    loadData();
   }
 
   async function submitDocument() {
